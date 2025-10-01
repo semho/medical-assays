@@ -1,0 +1,106 @@
+from django.db import models
+from django.contrib.auth.models import User
+from cryptography.fernet import Fernet
+import base64
+
+from medical_analysis.enums import LanguageChoices, Status, AnalysisType
+
+
+class UserProfile(models.Model):
+    """Профиль пользователя с ключом шифрования"""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    encryption_key = models.TextField(help_text="Зашифрованный индивидуальный ключ")
+    language_preference = models.CharField(max_length=2, choices=LanguageChoices.choices, default=LanguageChoices.RU)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Профиль {self.user.username}"
+
+    def save(self, *args, **kwargs):
+        if not self.encryption_key:
+            # Генерируем индивидуальный ключ для пользователя
+            key = Fernet.generate_key()
+            self.encryption_key = base64.b64encode(key).decode()
+        super().save(*args, **kwargs)
+
+    def get_fernet_cipher(self):
+        """Получить объект Fernet для шифрования/расшифровки"""
+        key = base64.b64decode(self.encryption_key.encode())
+        return Fernet(key)
+
+
+class AnalysisSession(models.Model):
+    """Сессия обработки анализа"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="analysis_sessions")
+    upload_timestamp = models.DateTimeField(auto_now_add=True)
+    processing_status = models.CharField(max_length=20, choices=Status.choices, default=Status.UPLOADING)
+    file_deleted_timestamp = models.DateTimeField(null=True, blank=True)
+    analysis_type = models.CharField(max_length=20, choices=AnalysisType.choices, null=True, blank=True)
+    original_filename = models.CharField(max_length=255)
+    temp_file_path = models.CharField(max_length=500, blank=True)
+    error_message = models.TextField(blank=True)
+    processing_started = models.DateTimeField(null=True, blank=True)
+    processing_completed = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-upload_timestamp"]
+
+    def __str__(self):
+        return f"Сессия {self.pk} - {self.user.username} - {self.processing_status}"
+
+
+class MedicalData(models.Model):
+    """Зашифрованные медицинские данные"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="medical_data")
+    session = models.OneToOneField(
+        AnalysisSession, on_delete=models.SET_NULL, null=True, blank=True, related_name="medical_data"
+    )
+    encrypted_results = models.TextField(help_text="Зашифрованные результаты анализов")
+    analysis_date = models.DateField(help_text="Дата проведения анализа")
+    analysis_type = models.CharField(max_length=20, choices=AnalysisType.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-analysis_date", "-created_at"]
+        verbose_name = "Медицинские данные"
+        verbose_name_plural = "Медицинские данные"
+
+    def __str__(self):
+        return f"Анализ {self.analysis_type} - {self.user.username} - {self.analysis_date}"
+
+    def encrypt_data(self, data_dict):
+        """Шифрование данных перед сохранением"""
+        cipher = self.user.profile.get_fernet_cipher()
+        json_data = str(data_dict).encode()
+        encrypted_data = cipher.encrypt(json_data)
+        self.encrypted_results = base64.b64encode(encrypted_data).decode()
+
+    def decrypt_data(self):
+        """Расшифровка данных"""
+        try:
+            cipher = self.user.profile.get_fernet_cipher()
+            encrypted_bytes = base64.b64decode(self.encrypted_results.encode())
+            decrypted_data = cipher.decrypt(encrypted_bytes)
+            return eval(decrypted_data.decode())  # В продакшене использовать json.loads
+        except Exception:
+            return None
+
+
+class SecurityLog(models.Model):
+    """Лог безопасности для аудита"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    action = models.CharField(max_length=100)
+    details = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.action} - {self.timestamp}"

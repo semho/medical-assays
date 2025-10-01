@@ -1,0 +1,104 @@
+{% extends 'medical_analysis/base.html' %}
+
+{% block title %}Детали анализа - МедАнализатор{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Результаты анализа</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'analysis_results' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Назад к списку
+        </a>
+    </div>
+</div>
+
+<!-- Информация об анализе -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Дата анализа:</strong> {{ medical_data.analysis_date|date:"d.m.Y" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Дата загрузки:</strong> {{ medical_data.created_at|date:"d.m.Y H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Показатели -->
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Показатели анализа</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-header-border">
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Значение</th>
+                        <th>Единицы</th>
+                        <th>Референс</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for param_name, data in parsed_data.items %}
+                    <tr>
+                        <td><strong>{{ param_name }}</strong></td>
+                        <td>
+                            {% if data.value is not none %}
+                                {{ data.value }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ data.unit|default:"-" }}</td>
+                        <td>{{ data.reference|default:"-" }}</td>
+                        <td>
+                            {% if data.status == "повышен" %}
+                                <span class="badge bg-danger">↑ Повышен</span>
+                            {% elif data.status == "понижен" %}
+                                <span class="badge bg-warning">↓ Понижен</span>
+                            {% elif data.status == "норма" %}
+                                <span class="badge bg-success">✓ Норма</span>
+                            {% else %}
+                                <span class="badge bg-secondary">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Распознанный текст -->
+{% if raw_text %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Распознанный текст</h5>
+    </div>
+    <div class="card-body">
+        <pre style="max-height: 400px; overflow-y: auto; white-space: pre-wrap;">{{ raw_text }}</pre>
+    </div>
+</div>
+{% endif %}
+
+<!-- Информация об обработке -->
+{% if processing_info %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Информация об обработке</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Метод:</strong> {{ processing_info.parsing_method }}</p>
+        <p><strong>Найдено параметров:</strong> {{ processing_info.parameters_found }}</p>
+        <p><strong>Обработано:</strong> {{ processing_info.processed_at }}</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

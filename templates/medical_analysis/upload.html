@@ -1,0 +1,368 @@
+{% extends 'medical_analysis/base.html' %}
+
+{% block title %}Загрузка анализа - МедАнализатор{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Загрузка анализа</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Назад к панели
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Инструкции -->
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Инструкции по загрузке
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Поддерживаемые форматы:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-file-pdf text-danger me-2"></i>PDF документы</li>
+                            <li><i class="fas fa-file-image text-success me-2"></i>Изображения (JPG, PNG, TIFF)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Типы анализов:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-tint text-danger me-2"></i>Общий анализ крови</li>
+                            <li><i class="fas fa-flask text-warning me-2"></i>Биохимический анализ</li>
+                            <li><i class="fas fa-dna text-info me-2"></i>Гормональные анализы</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    <strong>Безопасность:</strong> Файлы автоматически удаляются через 60 секунд после обработки. 
+                    Результаты сохраняются в зашифрованном виде.
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма загрузки -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2 text-primary"></i>
+                    Загрузить файл анализа
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="upload-form"
+                      hx-post="{% url 'upload_file' %}"
+                      hx-target="#upload-result"
+                      hx-indicator="#upload-spinner">
+                    {% csrf_token %}
+                    
+                    <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Перетащите файл сюда или нажмите для выбора</h4>
+                        <p class="text-muted mb-3">Максимальный размер файла: 10 МБ</p>
+                        
+                        <input type="file" 
+                               name="file" 
+                               id="file-input" 
+                               accept=".pdf,.jpg,.jpeg,.png,.tiff"
+                               style="display: none;"
+                               required>
+                        
+                        <div class="selected-file" id="selected-file" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-file me-2"></i>
+                                <span id="file-name"></span>
+                                <button type="button" class="btn-close float-end" 
+                                        onclick="clearFile()"></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="upload-btn" disabled>
+                            <i class="fas fa-upload me-2"></i>
+                            Загрузить и обработать
+                        </button>
+                        
+                        <div id="upload-spinner" class="htmx-indicator ms-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Результат загрузки -->
+                <div id="upload-result" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Прогресс обработки -->
+        <div class="card mt-4" id="processing-card" style="display: none;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog fa-spin me-2"></i>
+                    Обработка файла
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="progress progress-custom mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         id="progress-bar" style="width: 0%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span id="progress-text">Загрузка файла...</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-primary" id="progress-percentage">0%</span>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Обработка обычно занимает 30-60 секунд
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- История загрузок -->
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2 text-secondary"></i>
+                    Последние загрузки
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Файл</th>
+                                <th>Время</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody hx-get="{% url 'recent_sessions_partial' %}"
+                               hx-trigger="every 10s"
+                               hx-target="this"
+                               hx-swap="innerHTML">
+                            <!-- Данные загружаются через HTMX -->
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Загрузка истории...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const selectedFile = document.getElementById('selected-file');
+    const fileName = document.getElementById('file-name');
+    const uploadForm = document.getElementById('upload-form');
+    const processingCard = document.getElementById('processing-card');
+    
+    // Обработка выбора файла
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            showSelectedFile(file);
+            uploadBtn.disabled = false;
+        } else {
+            clearFile();
+        }
+    });
+    
+    function showSelectedFile(file) {
+        fileName.textContent = file.name;
+        selectedFile.style.display = 'block';
+        
+        // Проверка размера файла
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            showError('Файл слишком большой. Максимальный размер: 10 МБ');
+            uploadBtn.disabled = true;
+            return;
+        }
+        
+        // Проверка типа файла
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff'];
+        if (!allowedTypes.includes(file.type)) {
+            showError('Неподдерживаемый тип файла');
+            uploadBtn.disabled = true;
+            return;
+        }
+        
+        uploadBtn.disabled = false;
+    }
+    
+    window.clearFile = function() {
+        fileInput.value = '';
+        selectedFile.style.display = 'none';
+        uploadBtn.disabled = true;
+    }
+    
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        errorDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.getElementById('upload-result').innerHTML = ''; // Очищаем
+        document.getElementById('upload-result').appendChild(errorDiv);
+    }
+
+    function showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+        successDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.getElementById('upload-result').innerHTML = ''; // Очищаем
+        document.getElementById('upload-result').appendChild(successDiv);
+    }
+
+    // Предотвращаем вставку сырого ответа HTMX
+    document.addEventListener('htmx:beforeSwap', function(e) {
+        if (e.detail.target.id === 'upload-result') {
+            e.detail.shouldSwap = false; // Блокируем вставку JSON
+        }
+    });
+    
+    // Обработка успешной загрузки
+    document.addEventListener('htmx:afterRequest', function(e) {
+        if (e.detail.target.id === 'upload-result') {
+            try {
+                const data = JSON.parse(e.detail.xhr.response);
+                if (data.success) {
+                    showSuccess(data.message || 'Файл успешно загружен');
+                    showProcessing(data.session_id);
+                    clearFile();
+                } else {
+                    showError(data.error || 'Ошибка загрузки');
+                }
+            } catch (error) {
+                showError('Ошибка обработки ответа сервера');
+                console.error('Ошибка парсинга ответа:', error);
+            }
+        }
+    });
+    
+    function showProcessing(sessionId) {
+        processingCard.style.display = 'block';
+        let progress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressPercentage = document.getElementById('progress-percentage');
+        
+        // Симуляция прогресса
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress > 90) progress = 90;
+            
+            progressBar.style.width = progress + '%';
+            progressPercentage.textContent = Math.round(progress) + '%';
+            
+            if (progress < 30) {
+                progressText.textContent = 'Загрузка файла...';
+            } else if (progress < 70) {
+                progressText.textContent = 'Распознавание текста...';
+            } else {
+                progressText.textContent = 'Анализ данных...';
+            }
+        }, 1000);
+        
+        // Проверка статуса обработки
+        const statusInterval = setInterval(() => {
+            fetch(`/api/upload/status/?session_id=${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'completed') {
+                        clearInterval(progressInterval);
+                        clearInterval(statusInterval);
+                        
+                        progressBar.style.width = '100%';
+                        progressPercentage.textContent = '100%';
+                        progressText.textContent = 'Готово!';
+                        
+                        setTimeout(() => {
+                            window.location.href = '/results/';
+                        }, 2000);
+                    } else if (data.status === 'error') {
+                        clearInterval(progressInterval);
+                        clearInterval(statusInterval);
+                        
+                        processingCard.style.display = 'none';
+                        showError(data.error_message || 'Ошибка обработки файла');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка проверки статуса:', error);
+                    showError('Ошибка проверки статуса обработки');
+                });
+        }, 3000);
+    }
+    
+    // Drag & Drop улучшения
+    const uploadArea = document.querySelector('.upload-area');
+    let dragCounter = 0;
+    
+    uploadArea.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        dragCounter++;
+        this.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter === 0) {
+            this.classList.remove('dragover');
+        }
+    });
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dragCounter = 0;
+        this.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
+    });
+});
+</script>
+{% endblock %}

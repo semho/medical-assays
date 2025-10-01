@@ -1,0 +1,81 @@
+[project]
+name = "medical_mvp"
+version = "0.1.0"
+requires-python = ">=3.13.0"
+dependencies = [
+    "Django",
+    "python-dotenv",
+    "djangorestframework",
+    "pydantic",
+    "requests",
+    "python-decouple",
+    "psycopg[pool,binary]",
+    "gunicorn",
+    "colorlog",
+    "sentry-sdk",
+    "django-redis",
+    "django-cors-headers",
+    "celery>=5.5.2",
+    "flower>=2.0.1",
+    "cryptography",
+    "pytesseract",
+    "PyMuPDF>=1.25.7",
+    "django-debug-toolbar>=6.0.0",
+    "channels>=4.3.1",
+    "psutil>=7.1.0",
+    "openai>=1.0.0",
+    "tiktoken>=0.11.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs",
+    "ruff>=0.11.10",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+show-fixes = true
+
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "W", # pycodestyle warns
+    "F", # pyflakes
+    "UP", # pyupgrade
+    "D", # pydocstyle
+    "N", # pep8 naming
+    "DJ", # Django
+    "TC", # Type checking block
+    "TID", # Tidy imports
+    "PTH", # use pathlib
+    "SIM", # simplify
+    "B", # bugbear
+    "T20", # prints disallowed
+    "T10", # debugging is not allowed
+    "INT", # f strings to gettext
+    "ISC001", # one line split str disallowed
+    "PLE", # pylint errors
+]
+
+ignore = [
+    "D1", # undocommented
+    "DJ001", # null in charfield
+    "D400", # first line dic end period
+    "D415", # the first line dic end closing punctuation
+    "D203", # blank line after class
+    "D213", # first line pydoc empty
+    "ANN002", # type annotation for args
+    "ANN003", # type annotation for kwargs
+    "B007", # unused vars in for cycles
+]
+
+[tool.ruff.lint.flake8-implicit-str-concat]
+allow-multiline = false
+
+[tool.ruff.lint.per-file-ignores]
+"main/apps.py" = ["F401"]
+"main/form.py" = ["DJ007"]
+"*/clickhouse_migrations/*.py" = ["N999"]

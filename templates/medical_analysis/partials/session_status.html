@@ -1,0 +1,11 @@
+<div class="session-status-update">
+    {% if session.processing_status == 'uploading' %}
+        <span class="badge bg-warning">Загрузка...</span>
+    {% elif session.processing_status == 'processing' %}
+        <span class="badge bg-info">Обработка...</span>
+    {% elif session.processing_status == 'completed' %}
+        <span class="badge bg-success">Готово</span>
+    {% elif session.processing_status == 'error' %}
+        <span class="badge bg-danger">Ошибка</span>
+    {% endif %}
+</div>
