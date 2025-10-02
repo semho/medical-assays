@@ -18,7 +18,7 @@ from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .file_processor import FileUploadHandler
-from .utils import get_client_ip
+from .utils import get_client_ip, get_all_units_list
 
 logger = logging.getLogger(__name__)
 
@@ -218,23 +218,106 @@ def analysis_results(request):
 
 @login_required
 def analysis_detail(request, analysis_id):
-    """Детальный просмотр анализа"""
+    """Детальный просмотр и редактирование анализа"""
     medical_data = get_object_or_404(MedicalData, id=analysis_id, user=request.user)
 
-    # Расшифровываем данные
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "confirm":
+            # Собираем обновленные данные от пользователя
+            decrypted = medical_data.decrypt_data()
+            if not decrypted:
+                messages.error(request, "Ошибка расшифровки данных")
+                return redirect("analysis_results")
+
+            updated_parsed_data = {}
+
+            # Проходим по всем параметрам из формы
+            for key in request.POST:
+                if key.startswith("value_"):
+                    param_key = key.replace("value_", "")
+
+                    try:
+                        value = float(request.POST.get(f"value_{param_key}", 0))
+                        unit = request.POST.get(f"unit_{param_key}", "")
+                        reference = request.POST.get(f"reference_{param_key}", "")
+                        status = request.POST.get(f"status_{param_key}", "норма")
+
+                        updated_parsed_data[param_key] = {
+                            "value": value,
+                            "unit": unit,
+                            "reference": reference,
+                            "status": status,
+                        }
+                    except (ValueError, TypeError) as e:
+                        messages.warning(request, f"Ошибка в параметре {param_key}: {e}")
+                        continue
+
+            # Обновляем зашифрованные данные
+            decrypted["parsed_data"] = updated_parsed_data
+            decrypted["confirmed"] = True
+            decrypted["edited_by_user"] = True
+
+            medical_data.encrypt_and_save(decrypted)
+            medical_data.is_confirmed = True
+            medical_data.save()
+
+            SecurityLog.objects.create(
+                user=request.user,
+                action="ANALYSIS_CONFIRMED",
+                details=f"Пользователь подтвердил анализ {analysis_id}",
+                ip_address=get_client_ip(request),
+            )
+
+            messages.success(request, "Анализ успешно сохранён")
+            return redirect("analysis_results")
+
+        elif action == "delete":
+            # Удаляем анализ
+            SecurityLog.objects.create(
+                user=request.user,
+                action="ANALYSIS_DELETED",
+                details=f"Удалён анализ {analysis_id}",
+                ip_address=get_client_ip(request),
+            )
+            medical_data.delete()
+            messages.info(request, "Анализ удалён")
+            return redirect("dashboard")
+
+    # GET запрос - показываем форму
     decrypted_data = medical_data.decrypt_data()
 
     if not decrypted_data:
         messages.error(request, "Ошибка расшифровки данных")
         return redirect("analysis_results")
 
-    # Локализуем названия
-    parsed_data_localized = {}
-    for key, value in decrypted_data.get("parsed_data", {}).items():
-        ru_name = PARAMETER_NAMES_RU.get(key, key.replace("_", " ").title())
-        parsed_data_localized[ru_name] = value
+    parsed_data = decrypted_data.get("parsed_data", {})
 
-    # Логируем доступ к данным
+    # Подготавливаем данные для отображения
+    parameters_list = []
+    for param_key, param_value in parsed_data.items():
+        if isinstance(param_value, dict):
+            value = param_value.get("value")
+            unit = param_value.get("unit", "")
+            reference = param_value.get("reference", "")
+            status = param_value.get("status", "норма")
+        else:
+            value = param_value
+            unit = ""
+            reference = ""
+            status = "норма"
+
+        ru_name = PARAMETER_NAMES_RU.get(param_key, param_key.replace("_", " ").title())
+
+        parameters_list.append(
+            {"key": param_key, "name": ru_name, "value": value, "unit": unit, "reference": reference, "status": status}
+        )
+
+    # Сортируем по русскому названию
+    parameters_list.sort(key=lambda x: x["name"])
+
+    # Логируем просмотр
     SecurityLog.objects.create(
         user=request.user,
         action="DATA_VIEW",
@@ -244,12 +327,14 @@ def analysis_detail(request, analysis_id):
 
     context = {
         "medical_data": medical_data,
-        "parsed_data": parsed_data_localized,
+        "parameters": parameters_list,
+        "all_units": get_all_units_list(),
+        "edit_mode": not medical_data.is_confirmed,
         "raw_text": decrypted_data.get("raw_text", ""),
         "processing_info": decrypted_data.get("processing_info", {}),
     }
 
-    return render(request, "medical_analysis/analysis_detail.html", context)
+    return render(request, "medical_analysis/analysis_confirm.html", context)
 
 
 @login_required
@@ -464,7 +549,6 @@ def analysis_trends(request):
     # Создаём словарь типов для JS
     analysis_type_names = {choice[0]: choice[1] for choice in AnalysisType.choices}
 
-
     context = {
         "available_types": available_types,
         "analysis_types": AnalysisType.choices,
@@ -473,19 +557,15 @@ def analysis_trends(request):
 
     return render(request, "medical_analysis/trends.html", context)
 
-
 @login_required
 def trends_data(request, analysis_type=None):
-    """API endpoint для получения данных графиков"""
+    """
+    API endpoint для получения данных графиков
+    Теперь с поддержкой групповых данных
+    """
 
-    # Если analysis_type не указан или "all" - получаем все анализы
-    if not analysis_type or analysis_type == "all":
-        analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date")
-    else:
-        analyses = MedicalData.objects.filter(
-            user=request.user,
-            analysis_type=analysis_type
-        ).order_by("analysis_date")
+    # Получаем все анализы пользователя
+    analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date")
 
     if analyses.count() < 1:
         return JsonResponse({"error": "Нет данных для построения графиков"}, status=400)
@@ -508,26 +588,48 @@ def trends_data(request, analysis_type=None):
         if not decrypted:
             continue
 
-        parsed_data = decrypted.get("parsed_data", {})
         date_str = analysis.analysis_date.isoformat()
 
+        # НОВОЕ: Проверяем наличие групповых данных
+        grouped_data = decrypted.get('grouped_data', {})
+
+        if grouped_data:
+            # Новый формат с групповыми данными
+            # Если тип указан - берём только его
+            if analysis_type and analysis_type != 'all':
+                parsed_data = grouped_data.get(analysis_type, {})
+            else:
+                # Объединяем все типы
+                parsed_data = {}
+                for type_key in ['blood_general', 'blood_biochem', 'hormones', 'other']:
+                    parsed_data.update(grouped_data.get(type_key, {}))
+        else:
+            # Старый формат (для совместимости)
+            parsed_data = decrypted.get('parsed_data', {})
+
+            # Если указан фильтр по типу - фильтруем
+            if analysis_type and analysis_type != 'all':
+                filtered_data = {}
+                for param_key, param_data in parsed_data.items():
+                    param_real_type = PARAMETER_TYPE_MAP.get(param_key.lower())
+                    if param_real_type == analysis_type:
+                        filtered_data[param_key] = param_data
+                parsed_data = filtered_data
+
+        # Обрабатываем параметры
         for param_key, param_data in parsed_data.items():
             # Определяем реальный тип параметра
             param_real_type = PARAMETER_TYPE_MAP.get(param_key.lower())
 
-            # Если указан конкретный тип анализа для фильтрации - пропускаем несовпадающие
-            if analysis_type and analysis_type != "all" and param_real_type != analysis_type:
-                continue
-
             # Получаем значение
             if isinstance(param_data, dict):
-                value = param_data.get("value")
-                unit = param_data.get("unit", "")
-                reference = param_data.get("reference", "")
+                value = param_data.get('value')
+                unit = param_data.get('unit', '')
+                reference = param_data.get('reference', '')
             else:
                 value = param_data
-                unit = ""
-                reference = ""
+                unit = ''
+                reference = ''
 
             try:
                 value_float = float(value)
@@ -540,7 +642,7 @@ def trends_data(request, analysis_type=None):
 
             # Тип анализа для параметра
             if not parameters_data[param_key]["analysis_type"]:
-                parameters_data[param_key]["analysis_type"] = param_real_type or analysis.analysis_type
+                parameters_data[param_key]["analysis_type"] = param_real_type or 'other'
 
             # Единицы измерения
             if not parameters_data[param_key]["units"]:
@@ -561,14 +663,13 @@ def trends_data(request, analysis_type=None):
                 parameters_data[param_key]["reference_min"].append(None)
                 parameters_data[param_key]["reference_max"].append(None)
 
-        # Фильтруем параметры с достаточным количеством точек
+    # Фильтруем параметры с достаточным количеством точек
     result = {}
     for param_key, data in parameters_data.items():
         if len(data["values"]) >= 1:  # Даже одна точка имеет смысл
             result[param_key] = data
 
     return JsonResponse(result)
-
 
 def parse_reference_range(reference_str):
     """Парсинг референсного диапазона из строки"""

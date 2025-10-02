@@ -9,10 +9,10 @@ import re
 from django.conf import settings
 from django.utils import timezone
 
-from .constants.keywords_analysis import BLOOD, BIOCHEM, HORMONES
-from .constants.paraneter_parser import BLOOD_PARSER, BIOCHEM_PARSER, BLOOD_LEUKO_PARAMS, HORMONES_PARSER, RANGES_PARSER
-from .enums import AnalysisType, Status
-from .gpt_parser import GPTMedicalParser, format_gpt_result
+from .constants import PARAMETER_TYPE_MAP, LABORATORY_SIGNATURES, HORMONES_PARSER, BLOOD_PARSER, BLOOD_LEUKO_PARAMS, \
+    RANGES_PARSER, BIOCHEM_PARSER, ANALYSIS_KEYWORDS
+from .enums import AnalysisType, Status, LaboratoryType
+from .gpt_parser import GPTMedicalParser
 from .models import AnalysisSession, MedicalData, SecurityLog
 from celery import shared_task
 
@@ -348,9 +348,9 @@ class MedicalDataParser:
         text_lower = text.lower()
 
         # Ключевые слова для разных типов анализов
-        blood_general_keywords = BLOOD
-        biochem_keywords = BIOCHEM
-        hormones_keywords = HORMONES
+        blood_general_keywords = ANALYSIS_KEYWORDS.get("blood_general")
+        biochem_keywords = ANALYSIS_KEYWORDS.get("biochem")
+        hormones_keywords = ANALYSIS_KEYWORDS.get("hormones")
 
         blood_general_score = sum(1 for keyword in blood_general_keywords if keyword in text_lower)
         biochem_score = sum(1 for keyword in biochem_keywords if keyword in text_lower)
@@ -528,98 +528,315 @@ def schedule_file_deletion(file_path: str, session_id: int):
 
 @shared_task(queue="default")
 def process_medical_file(session_id: int):
+    """
+    Обработка медицинского файла с групповым парсингом всех типов анализов
+    """
     session = None
 
     try:
         session = AnalysisSession.objects.get(id=session_id)
+        session.processing_started = timezone.now()
+        session.processing_status = Status.PROCESSING
+        session.save()
 
         if not session.temp_file_path or not Path(session.temp_file_path).exists():
             raise FileNotFoundError("Временный файл не найден")
 
         # 1. OCR - извлекаем текст
-        logger.info(f"=== OCR для сессии {session_id} ===")
+        logger.info(f"=== Сессия {session_id}: OCR ===")
         ocr_processor = OCRProcessor()
         extracted_text = ocr_processor.process_file(session.temp_file_path)
         logger.info(f"Извлечено {len(extracted_text)} символов")
 
-        # 2. Определяем тип анализа
-        parser = MedicalDataParser()
-        analysis_type = parser.detect_analysis_type(extracted_text)
-        session.analysis_type = analysis_type
-        logger.info(f"Тип анализа: {analysis_type}")
+        # 2. НОВОЕ: Групповой парсинг всех типов
+        logger.info(f"=== Сессия {session_id}: Групповой парсинг ===")
+        grouped_parser = GroupedAnalysisParser()
+        grouped_results = grouped_parser.parse_all_types(extracted_text)
 
-        # 3. Парсинг через GPT (если ключ настроен)
-        parsed_data = {}
-        parsing_method = "regex"
+        # Определяем лабораторию
+        laboratory = grouped_results['_metadata']['laboratory']
+        parsing_method = grouped_results['_metadata']['parsing_method']
 
-        if settings.OPENAI_API_KEY:
-            try:
-                logger.info("=== Парсинг через GPT ===")
-                gpt_parser = GPTMedicalParser()
-                gpt_result = gpt_parser.parse_analysis(extracted_text, analysis_type)
+        # Определяем основной тип для совместимости
+        primary_type = grouped_parser.determine_primary_type(grouped_results)
+        session.analysis_type = primary_type
+        session.save()
 
-                if gpt_result and gpt_result.get("parameters"):
-                    parsed_data = format_gpt_result(gpt_result)
-                    parsing_method = "gpt"
+        logger.info(f"Лаборатория: {laboratory}")
+        logger.info(f"Основной тип: {primary_type}")
+        logger.info(f"Метод парсинга: {parsing_method}")
 
-                    logger.info(f"GPT успешно распознал {len(parsed_data)} параметров")
-                else:
-                    raise ValueError("GPT вернул пустой результат")
+        # 3. Подготавливаем объединённые данные для старого формата (для совместимости)
+        # Объединяем все параметры в один словарь для отображения
+        all_parameters = {}
+        for analysis_type in [AnalysisType.BLOOD_GENERAL, AnalysisType.BLOOD_BIOCHEM, AnalysisType.HORMONES, AnalysisType.OTHER]:
+            all_parameters.update(grouped_results.get(analysis_type, {}))
 
-            except Exception as e:
-                logger.warning(f"GPT парсинг не удался: {e}, используем regex")
-                parsing_method = "regex_fallback"
+        # 4. Подсчитываем статистику
+        params_by_type = {
+            AnalysisType.BLOOD_GENERAL.name: len(grouped_results.get('blood_general', {})),
+            AnalysisType.BLOOD_BIOCHEM.name: len(grouped_results.get('blood_biochem', {})),
+            AnalysisType.HORMONES.name: len(grouped_results.get('hormones', {})),
+            AnalysisType.OTHER.name: len(grouped_results.get('other', {})),
+        }
 
-        # 4. Фолбек на regex парсер
-        if not parsed_data:
-            logger.info("=== Парсинг через regex ===")
-            if analysis_type == AnalysisType.BLOOD_GENERAL:
-                parsed_data = parser.parse_blood_general(extracted_text)
-            elif analysis_type == AnalysisType.BLOOD_BIOCHEM:
-                parsed_data = parser.parse_blood_biochem(extracted_text)
-            elif analysis_type == AnalysisType.HORMONES:
-                parsed_data = parser.parse_hormones(extracted_text)
-            else:
-                parsed_data = {}
+        total_params = sum(params_by_type.values())
+        logger.info(f"Всего распознано параметров: {total_params}")
 
-        # 5. Сохраняем зашифрованные данные
+        # 5. Создаём запись MedicalData
         medical_data = MedicalData(
-            user=session.user, session=session, analysis_type=analysis_type, analysis_date=timezone.now().date()
+            user=session.user,
+            session=session,
+            analysis_type=primary_type,
+            analysis_date=timezone.now().date(),
+            laboratory=laboratory,
+            is_confirmed=False  # Требует подтверждения пользователем
         )
 
+        # 6. Формируем полную структуру данных для сохранения
         full_data = {
-            "parsed_data": parsed_data,
-            "raw_text": extracted_text,  # ВСЕГДА сохраняем исходник
-            "processing_info": {
-                "processed_at": timezone.now().isoformat(),
-                "file_name": session.original_filename,
-                "analysis_type": analysis_type,
-                "parsing_method": parsing_method,
-                "parameters_found": len(parsed_data),
+            # Групповые данные (новый формат)
+            'grouped_data': {
+                'blood_general': grouped_results.get('blood_general', {}),
+                'blood_biochem': grouped_results.get('blood_biochem', {}),
+                'hormones': grouped_results.get('hormones', {}),
+                'other': grouped_results.get('other', {}),
+            },
+            # Объединённые данные (старый формат для совместимости)
+            'parsed_data': all_parameters,
+            # Метаданные
+            'raw_text': extracted_text,
+            'processing_info': {
+                'processed_at': timezone.now().isoformat(),
+                'file_name': session.original_filename,
+                'primary_type': primary_type,
+                'laboratory': laboratory,
+                'parsing_method': parsing_method,
+                'total_parameters': total_params,
+                'parameters_by_type': params_by_type,
             },
         }
 
-        medical_data.encrypt_data(full_data)
-        medical_data.save()
+        # 7. Шифруем и сохраняем
+        medical_data.encrypt_and_save(full_data)
 
-        session.processing_status = "completed"
+        # 8. Обновляем статус сессии
+        session.processing_status = Status.COMPLETED
         session.processing_completed = timezone.now()
         session.save()
 
+        # 9. Планируем удаление временного файла
+        schedule_file_deletion.apply_async(
+            args=[session.temp_file_path, session_id],
+            countdown=settings.FILE_RETENTION_SECONDS
+        )
+
+        # 10. Логируем успех
         SecurityLog.objects.create(
             user=session.user,
             action="FILE_PROCESSED",
-            details=f"Файл обработан ({parsing_method}). Найдено параметров: {len(parsed_data)}",
+            details=f"Файл обработан ({parsing_method}, лаб: {laboratory}). "
+                    f"Найдено параметров: {total_params} "
+                    f"(ОАК: {params_by_type['blood_general']}, "
+                    f"Биохимия: {params_by_type['blood_biochem']}, "
+                    f"Гормоны: {params_by_type['hormones']})",
             ip_address=None,
         )
 
-        logger.info(f"✓ Обработка завершена для сессии {session_id}")
+        logger.info(f"✓ Сессия {session_id} успешно обработана")
+        return f"Success: {total_params} parameters found"
 
     except Exception as e:
+        logger.error(f"Ошибка обработки сессии {session_id}: {e}", exc_info=True)
+
         if session:
-            session.processing_status = "error"
+            session.processing_status = Status.ERROR
             session.error_message = str(e)
+            session.processing_completed = timezone.now()
             session.save()
 
-        logger.error(f"Ошибка обработки сессии {session_id}: {e}", exc_info=True)
+            # Всё равно планируем удаление файла
+            if session.temp_file_path and Path(session.temp_file_path).exists():
+                schedule_file_deletion.apply_async(
+                    args=[session.temp_file_path, session_id],
+                    countdown=10  # Удаляем через 10 секунд при ошибке
+                )
+
         raise
+
+
+class GroupedAnalysisParser:
+    """
+    Парсер, который распознаёт ВСЕ типы анализов из одного файла
+    и группирует параметры по типам
+    """
+
+    def __init__(self):
+        self.gpt_parser = GPTMedicalParser() if settings.OPENAI_API_KEY else None
+        self.laboratory = LaboratoryType.UNKNOWN
+
+    def detect_laboratory(self, text: str) -> str:
+        """Определение лаборатории по характерным меткам"""
+        text_lower = text.lower()
+
+        for lab, signatures in LABORATORY_SIGNATURES.items():
+            if any(sig in text_lower for sig in signatures):
+                logger.info(f"Обнаружена лаборатория: {lab}")
+                return lab
+
+        return  self.laboratory
+
+    def parse_all_types(self, text: str) -> dict:
+        """
+        Парсинг всех типов анализов из текста
+        Возвращает структуру: {'blood_general': {...}, 'blood_biochem': {...}, 'hormones': {...}}
+        """
+        logger.info("=== Групповой парсинг всех типов ===")
+
+        # Определяем лабораторию
+        self.laboratory = self.detect_laboratory(text)
+
+        grouped_results = {
+            "blood_general": {},
+            "blood_biochem": {},
+            "hormones": {},
+            "other": {},
+            "_metadata": {
+                "laboratory": self.laboratory,
+                "parsing_method": None,
+            },
+        }
+
+        # Если есть GPT - используем его для каждого типа
+        if self.gpt_parser:
+            grouped_results = self._parse_with_gpt(text, grouped_results)
+        else:
+            grouped_results = self._parse_with_regex(text, grouped_results)
+
+        # Классифицируем параметры по типам
+        grouped_results = self._classify_parameters(grouped_results)
+
+        # Подсчитываем статистику
+        total_params = sum(len(grouped_results[t]) for t in ["blood_general", "blood_biochem", "hormones", "other"])
+        logger.info(f"Всего распознано параметров: {total_params}")
+        logger.info(f"  - Общий анализ: {len(grouped_results['blood_general'])}")
+        logger.info(f"  - Биохимия: {len(grouped_results['blood_biochem'])}")
+        logger.info(f"  - Гормоны: {len(grouped_results['hormones'])}")
+        logger.info(f"  - Прочее: {len(grouped_results['other'])}")
+
+        return grouped_results
+
+    def _parse_with_gpt(self, text: str, grouped_results: dict) -> dict:
+        """Парсинг с использованием GPT для каждого типа"""
+        logger.info("Используем GPT для парсинга")
+
+        all_parameters = {}
+
+        # Пробуем каждый промпт
+        for analysis_type in [AnalysisType.BLOOD_GENERAL, AnalysisType.BLOOD_BIOCHEM, AnalysisType.HORMONES]:
+            try:
+                logger.info(f"GPT парсинг: {analysis_type}")
+                gpt_result = self.gpt_parser.parse_analysis(text, analysis_type, laboratory=self.laboratory)
+
+                if gpt_result and gpt_result.get("parameters"):
+                    formatted = format_gpt_result(gpt_result)
+                    all_parameters.update(formatted)
+                    logger.info(f"  + {len(formatted)} параметров")
+
+            except Exception as e:
+                logger.warning(f"Ошибка GPT парсинга {analysis_type}: {e}")
+                continue
+
+        # Если GPT что-то нашёл
+        if all_parameters:
+            grouped_results["_metadata"]["parsing_method"] = "gpt"
+            # Параметры будут классифицированы позже
+            grouped_results["_raw_parameters"] = all_parameters
+        else:
+            # Фолбек на regex
+            logger.info("GPT не вернул результатов, используем regex")
+            grouped_results = self._parse_with_regex(text, grouped_results)
+
+        return grouped_results
+
+    def _parse_with_regex(self, text: str, grouped_results: dict) -> dict:
+        """Фолбек на regex парсинг"""
+        logger.info("Используем regex для парсинга")
+        grouped_results["_metadata"]["parsing_method"] = "regex"
+
+        parser = MedicalDataParser()
+
+        # Парсим каждый тип отдельно
+        try:
+            bg_data = parser.parse_blood_general(text)
+            if bg_data:
+                grouped_results["_raw_parameters"] = grouped_results.get("_raw_parameters", {})
+                grouped_results["_raw_parameters"].update(bg_data)
+                logger.info(f"Regex: общий анализ - {len(bg_data)} параметров")
+        except Exception as e:
+            logger.warning(f"Ошибка regex парсинга ОАК: {e}")
+
+        try:
+            bc_data = parser.parse_blood_biochem(text)
+            if bc_data:
+                grouped_results["_raw_parameters"] = grouped_results.get("_raw_parameters", {})
+                grouped_results["_raw_parameters"].update(bc_data)
+                logger.info(f"Regex: биохимия - {len(bc_data)} параметров")
+        except Exception as e:
+            logger.warning(f"Ошибка regex парсинга биохимии: {e}")
+
+        try:
+            h_data = parser.parse_hormones(text)
+            if h_data:
+                grouped_results["_raw_parameters"] = grouped_results.get("_raw_parameters", {})
+                grouped_results["_raw_parameters"].update(h_data)
+                logger.info(f"Regex: гормоны - {len(h_data)} параметров")
+        except Exception as e:
+            logger.warning(f"Ошибка regex парсинга гормонов: {e}")
+
+        return grouped_results
+
+    def _classify_parameters(self, grouped_results: dict) -> dict:
+        """Классификация параметров по типам анализов"""
+        raw_params = grouped_results.pop("_raw_parameters", {})
+
+        if not raw_params:
+            return grouped_results
+
+        logger.info(f"Классификация {len(raw_params)} параметров")
+
+        for param_key, param_value in raw_params.items():
+            # Определяем тип параметра
+            param_type = PARAMETER_TYPE_MAP.get(param_key.lower())
+
+            if param_type == AnalysisType.BLOOD_GENERAL:
+                grouped_results["blood_general"][param_key] = param_value
+            elif param_type == AnalysisType.BLOOD_BIOCHEM:
+                grouped_results["blood_biochem"][param_key] = param_value
+            elif param_type == AnalysisType.HORMONES:
+                grouped_results["hormones"][param_key] = param_value
+            else:
+                # Неизвестный параметр - кладём в other
+                grouped_results["other"][param_key] = param_value
+                logger.warning(f"Неизвестный тип для параметра: {param_key}")
+
+        return grouped_results
+
+    def determine_primary_type(self, grouped_results: dict) -> str:
+        """Определение основного типа анализа для совместимости"""
+        # Считаем количество параметров в каждом типе
+        counts = {
+            AnalysisType.BLOOD_GENERAL.name: len(grouped_results.get("blood_general", {})),
+            AnalysisType.BLOOD_BIOCHEM.name: len(grouped_results.get("blood_biochem", {})),
+            AnalysisType.HORMONES.name: len(grouped_results.get("hormones", {})),
+        }
+
+        # Возвращаем тип с максимальным количеством параметров
+        if counts["blood_general"] > 0 and counts["blood_general"] >= max(counts["blood_biochem"], counts["hormones"]):
+            return AnalysisType.BLOOD_GENERAL
+        elif counts["blood_biochem"] > 0 and counts["blood_biochem"] >= counts["hormones"]:
+            return AnalysisType.BLOOD_BIOCHEM
+        elif counts["hormones"] > 0:
+            return AnalysisType.HORMONES
+        else:
+            return AnalysisType.BLOOD_GENERAL  # дефолт

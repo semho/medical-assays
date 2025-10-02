@@ -1,0 +1,266 @@
+{% extends 'medical_analysis/base.html' %}
+{% load static %}
+
+{% block title %}Подтверждение анализа{% endblock %}
+
+{% block extra_css %}
+<style>
+    .parameter-row {
+        border-bottom: 1px solid #e9ecef;
+        padding: 1rem 0;
+        transition: background-color 0.2s;
+    }
+    .parameter-row:hover {
+        background-color: #f8f9fa;
+    }
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 8px;
+    }
+    .status-норма { background-color: #28a745; }
+    .status-повышен { background-color: #dc3545; }
+    .status-понижен { background-color: #ffc107; }
+    
+    .autocomplete-suggestions {
+        border: 1px solid #ced4da;
+        border-top: none;
+        position: absolute;
+        background: white;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+    .autocomplete-suggestion {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+    .autocomplete-suggestion:hover {
+        background-color: #f8f9fa;
+    }
+    .edit-disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        {% if edit_mode %}
+                            Подтвердите распознанные данные
+                        {% else %}
+                            Детали анализа
+                        {% endif %}
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Информация об анализе -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Дата анализа:</strong><br>
+                                {{ medical_data.analysis_date|date:"d.m.Y" }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Тип:</strong><br>
+                                {{ medical_data.get_analysis_type_display }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Лаборатория:</strong><br>
+                                {{ medical_data.laboratory|default:"не определена" }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Статус:</strong><br>
+                                {% if medical_data.is_confirmed %}
+                                    <span class="badge bg-success">Подтверждено</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Требует проверки</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if edit_mode %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Проверьте данные!</strong> 
+                        Убедитесь, что все значения, единицы измерения и референсные диапазоны распознаны корректно.
+                        При необходимости внесите исправления.
+                    </div>
+                    {% endif %}
+
+                    <!-- Форма с параметрами -->
+                    <form method="post" id="confirmForm">
+                        {% csrf_token %}
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 30%">Параметр</th>
+                                        <th style="width: 15%">Значение</th>
+                                        <th style="width: 15%">Единицы</th>
+                                        <th style="width: 20%">Референс</th>
+                                        <th style="width: 15%">Статус</th>
+                                        <th style="width: 5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for param in parameters %}
+                                    <tr class="parameter-row">
+                                        <td>
+                                            <strong>{{ param.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ param.key }}</small>
+                                        </td>
+                                        <td>
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   class="form-control form-control-sm" 
+                                                   name="value_{{ param.key }}"
+                                                   value="{{ param.value }}"
+                                                   {% if not edit_mode %}disabled{% endif %}
+                                                   required>
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control form-control-sm unit-autocomplete" 
+                                                   name="unit_{{ param.key }}"
+                                                   value="{{ param.unit }}"
+                                                   list="units-list"
+                                                   {% if not edit_mode %}disabled{% endif %}>
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control form-control-sm" 
+                                                   name="reference_{{ param.key }}"
+                                                   value="{{ param.reference }}"
+                                                   placeholder="мин - макс"
+                                                   {% if not edit_mode %}disabled{% endif %}>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm" 
+                                                    name="status_{{ param.key }}"
+                                                    {% if not edit_mode %}disabled{% endif %}>
+                                                <option value="норма" {% if param.status == "норма" %}selected{% endif %}>Норма</option>
+                                                <option value="повышен" {% if param.status == "повышен" %}selected{% endif %}>Повышен</option>
+                                                <option value="понижен" {% if param.status == "понижен" %}selected{% endif %}>Понижен</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <span class="status-indicator status-{{ param.status }}"></span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Datalist для автодополнения единиц -->
+                        <datalist id="units-list">
+                            {% for unit in all_units %}
+                                <option value="{{ unit.ru }}">{{ unit.en }}</option>
+                            {% endfor %}
+                        </datalist>
+
+                        <!-- Кнопки действий -->
+                        <div class="mt-4 d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'analysis_results' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                                </a>
+                            </div>
+                            <div>
+                                {% if edit_mode %}
+                                    <button type="submit" name="action" value="delete" 
+                                            class="btn btn-danger me-2"
+                                            onclick="return confirm('Вы уверены, что хотите удалить этот анализ?')">
+                                        <i class="fas fa-trash me-2"></i>Удалить
+                                    </button>
+                                    <button type="submit" name="action" value="confirm" 
+                                            class="btn btn-success">
+                                        <i class="fas fa-check me-2"></i>Подтвердить и сохранить
+                                    </button>
+                                {% else %}
+                                    <button type="submit" name="action" value="delete" 
+                                            class="btn btn-danger"
+                                            onclick="return confirm('Вы уверены, что хотите удалить этот анализ?')">
+                                        <i class="fas fa-trash me-2"></i>Удалить анализ
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Дополнительная информация -->
+                    {% if processing_info %}
+                    <div class="mt-4">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#processingInfo">
+                            <i class="fas fa-info-circle me-2"></i>Информация об обработке
+                        </button>
+                        <div class="collapse mt-2" id="processingInfo">
+                            <div class="card card-body bg-light">
+                                <pre class="mb-0"><code>{{ processing_info|pprint }}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if raw_text and edit_mode %}
+                    <div class="mt-4">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#rawText">
+                            <i class="fas fa-file-alt me-2"></i>Исходный текст
+                        </button>
+                        <div class="collapse mt-2" id="rawText">
+                            <div class="card card-body bg-light">
+                                <pre class="mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem;">{{ raw_text }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Автодополнение для единиц измерения
+document.addEventListener('DOMContentLoaded', function() {
+    const unitInputs = document.querySelectorAll('.unit-autocomplete');
+    
+    unitInputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.setAttribute('autocomplete', 'off');
+        });
+    });
+    
+    // Подтверждение формы
+    const form = document.getElementById('confirmForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const action = e.submitter?.value;
+            if (action === 'confirm') {
+                const confirmed = confirm('Вы уверены, что все данные проверены и корректны?');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

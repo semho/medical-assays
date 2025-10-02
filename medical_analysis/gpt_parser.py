@@ -5,16 +5,13 @@ import re
 import tiktoken
 from openai import OpenAI
 from django.conf import settings
-
-from medical_analysis.constants.paraneter_parser import GPT_PARSER_ALIASES
 from medical_analysis.constants.prompts import BLOOD_GENERAL_PROMPT, BLOOD_BIOCHEM_PROMPT, HORMONES_PROMPT
 from medical_analysis.enums import AnalysisType
 
 logger = logging.getLogger(__name__)
 
-
 class GPTMedicalParser:
-    """Парсер медицинских анализов через GPT"""
+    """Парсер медицинских анализов через GPT с поддержкой разных лабораторий"""
 
     def __init__(self):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -22,11 +19,10 @@ class GPTMedicalParser:
         self.max_input_tokens = settings.GPT_MAX_INPUT_TOKENS
         self.max_output_tokens = settings.GPT_MAX_OUTPUT_TOKENS
         self.temperature = settings.GPT_TEMPERATURE
-        # Инициализируем токенайзер для подсчета
+
         try:
             self.encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
-            # Фолбек на cl100k_base для gpt-4o-mini
             self.encoding = tiktoken.get_encoding("cl100k_base")
 
     def count_tokens(self, text: str) -> int:
@@ -39,15 +35,26 @@ class GPTMedicalParser:
         if len(tokens) <= max_tokens:
             return text
 
-        # Обрезаем с запасом
         truncated_tokens = tokens[:max_tokens]
         truncated_text = self.encoding.decode(truncated_tokens)
 
         logger.warning(f"Текст обрезан с {len(tokens)} до {len(truncated_tokens)} токенов")
         return truncated_text
 
-    def parse_analysis(self, text: str, analysis_type: str = "blood_general") -> dict:
-        """Парсинг анализа через GPT с контролем токенов"""
+    def parse_analysis(
+            self,
+            text: str,
+            analysis_type: str = "blood_general",
+            laboratory: str = "unknown"
+    ) -> dict:
+        """
+        Парсинг анализа через GPT с контролем токенов
+
+        Args:
+            text: Текст анализа
+            analysis_type: Тип анализа
+            laboratory: Название лаборатории (для адаптации промпта)
+        """
 
         # Предобработка текста
         text = preprocess_analysis_text(text)
@@ -64,12 +71,15 @@ class GPTMedicalParser:
             input_tokens = self.count_tokens(text)
             logger.info(f"После обрезки: {input_tokens} токенов")
 
-        system_prompt = self._get_system_prompt(analysis_type)
+        system_prompt = self._get_system_prompt(analysis_type, laboratory)
 
         # Подсчитываем общее количество токенов запроса
         system_tokens = self.count_tokens(system_prompt)
         total_request_tokens = system_tokens + input_tokens
-        logger.info(f"Общий запрос: {total_request_tokens} токенов (система: {system_tokens}, текст: {input_tokens})")
+        logger.info(
+            f"Общий запрос: {total_request_tokens} токенов "
+            f"(система: {system_tokens}, текст: {input_tokens})"
+        )
 
         try:
             response = self.client.chat.completions.create(
@@ -84,6 +94,7 @@ class GPTMedicalParser:
             )
 
             result = json.loads(response.choices[0].message.content)
+
             # Логируем использование токенов
             usage = response.usage
             if usage:
@@ -103,20 +114,60 @@ class GPTMedicalParser:
             logger.error(f"Ошибка GPT парсинга: {e}")
             return {}
 
-    def _get_system_prompt(self, analysis_type: str) -> str:
-        """Системный промпт для GPT"""
+    def _get_system_prompt(self, analysis_type: str, laboratory: str = "unknown") -> str:
+        """
+        Системный промпт для GPT с адаптацией под лабораторию
 
+        Args:
+            analysis_type: Тип анализа
+            laboratory: Название лаборатории
+        """
+
+        # Базовый промпт для типа анализа
         if analysis_type == AnalysisType.BLOOD_GENERAL:
-            return BLOOD_GENERAL_PROMPT
-
+            base_prompt = BLOOD_GENERAL_PROMPT
         elif analysis_type == AnalysisType.BLOOD_BIOCHEM:
-            return BLOOD_BIOCHEM_PROMPT
-
+            base_prompt = BLOOD_BIOCHEM_PROMPT
         elif analysis_type == AnalysisType.HORMONES:
-            return HORMONES_PROMPT
-
+            base_prompt = HORMONES_PROMPT
         else:
-            return "Извлеки ВСЕ медицинские показатели в JSON: parameters с value, unit, reference, status."
+            base_prompt = "Извлеки ВСЕ медицинские показатели в JSON: parameters с value, unit, reference, status."
+
+        # Добавляем специфичные инструкции для известных лабораторий
+        lab_hints = {
+            'invitro': """
+
+            ОСОБЕННОСТИ INVITRO:
+            - Единицы измерения часто идут ПЕРЕД названием параметра
+            - Формат: "ммоль/л \n Глюкоза \n 5.2"
+            - Референсные значения обычно в конце строки
+            - Код исследования вида "A09.05.XXX" - игнорируй
+            """,
+            'helix': """
+
+            ОСОБЕННОСТИ HELIX:
+            - Строгий табличный формат с фиксированными колонками
+            - Формат: "Параметр | Значение | Единицы | Референс"
+            - Отклонения помечены символом *
+            """,
+            'kdl': """
+
+            ОСОБЕННОСТИ КДЛ:
+            - Смешанный формат, может быть и табличный и построчный
+            - Референсные значения иногда на отдельной строке
+            """,
+            'gemotest': """
+
+            ОСОБЕННОСТИ GEMOTEST:
+            - Похож на Invitro
+            - Единицы могут быть как до, так и после значения
+            """,
+        }
+
+        # Добавляем подсказку для лаборатории, если она известна
+        lab_hint = lab_hints.get(laboratory, "")
+
+        return base_prompt + lab_hint
 
     def _estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Оценка стоимости запроса"""
@@ -125,52 +176,11 @@ class GPTMedicalParser:
         }
 
         model_prices = prices.get(self.model, prices["gpt-4o-mini"])
-        cost = (input_tokens / 1_000_000 * model_prices["input"]) + (output_tokens / 1_000_000 * model_prices["output"])
+        cost = (
+                (input_tokens / 1_000_000 * model_prices["input"]) +
+                (output_tokens / 1_000_000 * model_prices["output"])
+        )
         return cost
-
-
-# Вспомогательные функции для форматирования
-def format_gpt_result(gpt_data: dict) -> dict:
-    """Форматирует результат GPT"""
-    formatted = {}
-
-    parameters = gpt_data.get("parameters", {})
-
-    # Маппинг для унификации ключей
-    key_aliases = GPT_PARSER_ALIASES
-
-    for key, data in parameters.items():
-        unified_key = key_aliases.get(key.lower(), key.lower())
-        if isinstance(data, dict):
-            value = data.get("value")
-            unit = data.get("unit", "")
-
-            # Если значение содержит %, выносим в unit
-            if isinstance(value, str) and "%" in value:
-                value = value.replace("%", "").strip()
-                unit = unit or "%"
-                try:
-                    value = float(value.replace(",", "."))
-                except ValueError:
-                    pass
-            elif isinstance(value, str):
-                value = value.replace(",", ".").strip()
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-
-            formatted[unified_key] = {
-                "value": value,
-                "unit": unit,
-                "reference": data.get("reference", ""),
-                "status": data.get("status", "неизвестно"),
-            }
-        else:
-            formatted[unified_key] = {"value": data}
-
-    return formatted
-
 
 def preprocess_analysis_text(text: str) -> str:
     """Предобработка текста для улучшения распознавания"""
