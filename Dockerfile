@@ -1,30 +1,22 @@
-FROM ghcr.io/astral-sh/uv:python3.13-alpine
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 WORKDIR /app
 
-# Установка всех необходимых зависимостей для PyMuPDF
-RUN apk add --no-cache \
-    gcc g++ make \
-    python3-dev \
-    musl-dev \
-    linux-headers \
-    clang-dev \
-    llvm-dev \
-    mupdf-dev \
-    freetype-dev \
-    harfbuzz-dev \
-    openjpeg-dev \
-    jbig2dec-dev \
-    libjpeg-turbo-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
-    tesseract-ocr-data-rus \
-    tesseract-ocr-data-eng \
+    tesseract-ocr-rus \
+    tesseract-ocr-eng \
+    libpq5 \
     netcat-openbsd \
-    rust \
-    cargo
+    gcc g++ python3-dev libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY .python-version .
-COPY pyproject.toml .
-COPY uv.lock .
-RUN uv sync
-RUN rm -rf ./*
+COPY .python-version pyproject.toml uv.lock ./
+
+# Устанавливаем пакеты БЕЗ создания .venv
+RUN uv pip install --system -r pyproject.toml
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+EXPOSE 8000

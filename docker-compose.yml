@@ -9,6 +9,8 @@ x-medical-base: &medical-base
     dockerfile: Dockerfile
   volumes:
     - ./.:/app
+  environment:
+    - UV_SYSTEM_PYTHON=1 # uv будет использовать системный Python
   depends_on:
     - postgres-medical
     - redis
@@ -102,7 +104,7 @@ services:
     container_name: celery_beat
     environment:
       - LOCAL_DEBUGGER_RUN=False
-    command: sh -c "uv run celery -A medical_mvp beat -l INFO"
+    command: ["celery", "-A", "medical_mvp", "beat", "-l", "INFO"]
     depends_on:
       rabbitmq:
         condition: service_healthy

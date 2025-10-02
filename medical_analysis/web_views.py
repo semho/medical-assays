@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,6 +13,7 @@ from datetime import timedelta
 import logging
 
 from .constants.parameter_names import PARAMETER_NAMES_RU
+from .constants.type_map import PARAMETER_TYPE_MAP
 from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
@@ -459,27 +461,46 @@ def analysis_trends(request):
     # Получаем доступные типы анализов у пользователя
     available_types = MedicalData.objects.filter(user=request.user).values_list("analysis_type", flat=True).distinct()
 
+    # Создаём словарь типов для JS
+    analysis_type_names = {choice[0]: choice[1] for choice in AnalysisType.choices}
+
+
     context = {
         "available_types": available_types,
         "analysis_types": AnalysisType.choices,
+        "analysis_type_names_json": json.dumps(analysis_type_names, ensure_ascii=False),
     }
 
     return render(request, "medical_analysis/trends.html", context)
 
 
 @login_required
-def trends_data(request, analysis_type):
+def trends_data(request, analysis_type=None):
     """API endpoint для получения данных графиков"""
 
-    # Получаем все анализы данного типа
-    analyses = MedicalData.objects.filter(user=request.user, analysis_type=analysis_type).order_by("analysis_date")
+    # Если analysis_type не указан или "all" - получаем все анализы
+    if not analysis_type or analysis_type == "all":
+        analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date")
+    else:
+        analyses = MedicalData.objects.filter(
+            user=request.user,
+            analysis_type=analysis_type
+        ).order_by("analysis_date")
 
-    if analyses.count() < 2:
-        return JsonResponse({"error": "Недостаточно данных для построения графика (минимум 2 анализа)"}, status=400)
+    if analyses.count() < 1:
+        return JsonResponse({"error": "Нет данных для построения графиков"}, status=400)
 
     # Структура для хранения данных по параметрам
     parameters_data = defaultdict(
-        lambda: {"dates": [], "values": [], "units": None, "reference_min": [], "reference_max": [], "name": None}
+        lambda: {
+            "dates": [],
+            "values": [],
+            "units": None,
+            "reference_min": [],
+            "reference_max": [],
+            "name": None,
+            "analysis_type": None
+        }
     )
 
     for analysis in analyses:
@@ -491,6 +512,13 @@ def trends_data(request, analysis_type):
         date_str = analysis.analysis_date.isoformat()
 
         for param_key, param_data in parsed_data.items():
+            # Определяем реальный тип параметра
+            param_real_type = PARAMETER_TYPE_MAP.get(param_key.lower())
+
+            # Если указан конкретный тип анализа для фильтрации - пропускаем несовпадающие
+            if analysis_type and analysis_type != "all" and param_real_type != analysis_type:
+                continue
+
             # Получаем значение
             if isinstance(param_data, dict):
                 value = param_data.get("value")
@@ -509,6 +537,10 @@ def trends_data(request, analysis_type):
             # Добавляем данные
             parameters_data[param_key]["dates"].append(date_str)
             parameters_data[param_key]["values"].append(value_float)
+
+            # Тип анализа для параметра
+            if not parameters_data[param_key]["analysis_type"]:
+                parameters_data[param_key]["analysis_type"] = param_real_type or analysis.analysis_type
 
             # Единицы измерения
             if not parameters_data[param_key]["units"]:
@@ -529,10 +561,10 @@ def trends_data(request, analysis_type):
                 parameters_data[param_key]["reference_min"].append(None)
                 parameters_data[param_key]["reference_max"].append(None)
 
-    # Фильтруем параметры с достаточным количеством точек
+        # Фильтруем параметры с достаточным количеством точек
     result = {}
     for param_key, data in parameters_data.items():
-        if len(data["values"]) >= 2:
+        if len(data["values"]) >= 1:  # Даже одна точка имеет смысл
             result[param_key] = data
 
     return JsonResponse(result)

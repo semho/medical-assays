@@ -1,3 +1,14 @@
 .env
 .idea
 celerybeat-schedule
+__pycache__/
+medical_mvp/__pycache__
+medical_analysis/__pycache__
+*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+staticfiles
+logs
+*.log
+*.sqlite3

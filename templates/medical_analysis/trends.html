@@ -6,29 +6,116 @@
 <style>
     .chart-container {
         position: relative;
-        height: 300px;  /* Уменьшили с 400px */
+        height: 300px;
         margin-bottom: 20px;
     }
     .parameter-card {
         margin-bottom: 20px;
     }
-    /* Сетка по 3 в строку */
+    /* Динамическая сетка */
     .charts-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
         gap: 20px;
+        grid-template-columns: repeat(3, 1fr); /* По умолчанию 3 колонки */
     }
 
-    @media (min-width: 1200px) {
-        .charts-grid {
+    .charts-grid.cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .charts-grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .charts-grid.cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .charts-grid.cols-5 {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .charts-grid.cols-6 {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    @media (max-width: 1400px) {
+        .charts-grid.cols-6 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .charts-grid.cols-5 {
             grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 992px) {
+        .charts-grid.cols-6,
+        .charts-grid.cols-5,
+        .charts-grid.cols-4 {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 
     @media (max-width: 768px) {
         .charts-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr !important;
         }
+    }
+
+    .analysis-type-section {
+        margin-bottom: 40px;
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .filter-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        margin-left: 10px;
+        font-size: 0.9rem;
+        color: white;
+        font-weight: 500;
+    }
+
+    .grid-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .grid-btn {
+        padding: 8px 12px;
+        border: 2px solid #dee2e6;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .grid-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .grid-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .grid-btn i {
+        margin-right: 5px;
     }
 </style>
 {% endblock %}
@@ -39,10 +126,10 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-6">
-        <label for="analysisTypeSelect" class="form-label">Выберите тип анализа:</label>
+    <div class="col-md-4">
+        <label for="analysisTypeSelect" class="form-label">Фильтр по типу анализа:</label>
         <select id="analysisTypeSelect" class="form-select">
-            <option value="">-- Выберите тип --</option>
+            <option value="all">Все типы</option>
             {% for type_value, type_name in analysis_types %}
                 {% if type_value in available_types %}
                     <option value="{{ type_value }}">{{ type_name }}</option>
@@ -50,12 +137,39 @@
             {% endfor %}
         </select>
     </div>
+    <div class="col-md-4">
+        <label class="form-label">Графиков в ряд:</label>
+        <div class="grid-controls">
+            <button class="grid-btn" data-cols="2">
+                <i class="fas fa-th-large"></i>2
+            </button>
+            <button class="grid-btn active" data-cols="3">
+                <i class="fas fa-th"></i>3
+            </button>
+            <button class="grid-btn" data-cols="4">
+                <i class="fas fa-th"></i>4
+            </button>
+            <button class="grid-btn" data-cols="5">
+                <i class="fas fa-th"></i>5
+            </button>
+            <button class="grid-btn" data-cols="6">
+                <i class="fas fa-th"></i>6
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <div id="filterInfo" class="text-muted">
+            <small>Отображаются все доступные параметры</small>
+        </div>
+    </div>
 </div>
 
 <div id="chartsContainer">
     <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>
-        Выберите тип анализа для отображения графиков динамики
+        <div class="spinner-border spinner-border-sm me-2" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+        Загрузка данных...
     </div>
 </div>
 
@@ -70,36 +184,71 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 let charts = [];
+let allData = null;
+let currentCols = 3;
+
+// Получаем названия типов анализов из Django
+const ANALYSIS_TYPE_NAMES = {{ analysis_type_names_json|safe }};
+
+// Загружаем все данные при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadTrendsData('all');
+
+    // Обработчики для кнопок сетки
+    document.querySelectorAll('.grid-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Убираем active со всех кнопок
+            document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
+            // Добавляем active на нажатую
+            this.classList.add('active');
+
+            // Получаем количество колонок
+            currentCols = parseInt(this.dataset.cols);
+
+            // Применяем к всем grid-контейнерам
+            document.querySelectorAll('.charts-grid').forEach(grid => {
+                grid.className = `charts-grid cols-${currentCols}`;
+            });
+
+            // Сохраняем выбор в localStorage
+            localStorage.setItem('trendsGridCols', currentCols);
+        });
+    });
+
+    // Восстанавливаем сохраненное количество колонок
+    const savedCols = localStorage.getItem('trendsGridCols');
+    if (savedCols) {
+        currentCols = parseInt(savedCols);
+        document.querySelectorAll('.grid-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.dataset.cols) === currentCols) {
+                btn.classList.add('active');
+            }
+        });
+    }
+});
 
 document.getElementById('analysisTypeSelect').addEventListener('change', function() {
     const analysisType = this.value;
-    if (!analysisType) {
-        document.getElementById('chartsContainer').innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                Выберите тип анализа для отображения графиков динамики
-            </div>
-        `;
-        return;
-    }
-    
-    loadTrendsData(analysisType);
+    filterCharts(analysisType);
 });
 
 function loadTrendsData(analysisType) {
-    // Показываем спиннер
     document.getElementById('loadingSpinner').classList.remove('d-none');
     document.getElementById('chartsContainer').innerHTML = '';
-    
-    // Уничтожаем старые графики
+
     charts.forEach(chart => chart.destroy());
     charts = [];
-    
-    fetch(`/trends/data/${analysisType}/`)
+
+    const url = analysisType === 'all'
+        ? '/trends/data/'
+        : `/trends/data/${analysisType}/`;
+
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             document.getElementById('loadingSpinner').classList.add('d-none');
-            
+
             if (data.error) {
                 document.getElementById('chartsContainer').innerHTML = `
                     <div class="alert alert-warning">
@@ -109,7 +258,7 @@ function loadTrendsData(analysisType) {
                 `;
                 return;
             }
-            
+
             if (Object.keys(data).length === 0) {
                 document.getElementById('chartsContainer').innerHTML = `
                     <div class="alert alert-warning">
@@ -119,8 +268,9 @@ function loadTrendsData(analysisType) {
                 `;
                 return;
             }
-            
-            renderCharts(data);
+
+            allData = data;
+            renderChartsGrouped(data);
         })
         .catch(error => {
             document.getElementById('loadingSpinner').classList.add('d-none');
@@ -134,154 +284,226 @@ function loadTrendsData(analysisType) {
         });
 }
 
-function renderCharts(parametersData) {
+function filterCharts(analysisType) {
+    if (!allData) return;
+
     const container = document.getElementById('chartsContainer');
+    container.innerHTML = '';
 
-    // Создаём grid-контейнер
-    const gridContainer = document.createElement('div');
-    gridContainer.className = 'charts-grid';
-    container.appendChild(gridContainer);
+    charts.forEach(chart => chart.destroy());
+    charts = [];
 
-    Object.entries(parametersData).forEach(([paramKey, paramData]) => {
-        // Создаём карточку для каждого параметра
-        const card = document.createElement('div');
-        card.className = 'card parameter-card';
-        card.innerHTML = `
-            <div class="card-header bg-light">
-                <h6 class="mb-0">${paramData.name}</h6>
-                <small class="text-muted">${paramData.units || ''}</small>
-            </div>
-            <div class="card-body p-2">
-                <div class="chart-container">
-                    <canvas id="chart-${paramKey}"></canvas>
-                </div>
+    // Фильтруем данные
+    let filteredData = {};
+
+    if (analysisType === 'all') {
+        filteredData = allData;
+        document.getElementById('filterInfo').innerHTML =
+            '<small>Отображаются все доступные параметры</small>';
+    } else {
+        Object.entries(allData).forEach(([key, data]) => {
+            if (data.analysis_type === analysisType) {
+                filteredData[key] = data;
+            }
+        });
+
+        const typeName = ANALYSIS_TYPE_NAMES[analysisType] || analysisType;
+        document.getElementById('filterInfo').innerHTML =
+            `<small>Фильтр: <strong>${typeName}</strong></small>`;
+    }
+
+    if (Object.keys(filteredData).length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Нет параметров для выбранного типа анализа
             </div>
         `;
-        gridContainer.appendChild(card);  // Добавляем в grid вместо container
+        return;
+    }
 
-        // Создаём график
-        const ctx = document.getElementById(`chart-${paramKey}`).getContext('2d');
+    renderChartsGrouped(filteredData);
+}
 
-        // Проверяем выход за референсные значения
-        const hasReference = paramData.reference_min.some(v => v !== null);
+function renderChartsGrouped(parametersData) {
+    const container = document.getElementById('chartsContainer');
 
-        const datasets = [{
-            label: paramData.name,
-            data: paramData.values,
-            borderColor: getLineColor(paramData.values, paramData.reference_min, paramData.reference_max),
-            backgroundColor: 'rgba(13, 110, 253, 0.1)',
-            tension: 0.4,
-            fill: true,
-            pointRadius: 4,  // Уменьшили точки
-            pointHoverRadius: 6,
-            segment: {
-                borderColor: ctx => getSegmentColor(ctx, paramData.reference_min, paramData.reference_max)
-            }
-        }];
+    // Группируем параметры по типам
+    const grouped = {};
+    Object.entries(parametersData).forEach(([paramKey, paramData]) => {
+        const type = paramData.analysis_type || 'unknown';
+        if (!grouped[type]) {
+            grouped[type] = {};
+        }
+        grouped[type][paramKey] = paramData;
+    });
 
-        // Добавляем референсные границы
-        if (hasReference) {
-            const refMin = paramData.reference_min[0];
-            const refMax = paramData.reference_max[0];
+    // Порядок отображения типов
+    const typeOrder = ['blood_general', 'blood_biochem', 'hormones'];
 
-            if (refMin !== null) {
-                datasets.push({
-                    label: 'Мин',
-                    data: Array(paramData.dates.length).fill(refMin),
-                    borderColor: 'rgba(220, 53, 69, 0.5)',
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false
-                });
-            }
+    typeOrder.forEach(type => {
+        if (!grouped[type]) return;
 
-            if (refMax !== null) {
-                datasets.push({
-                    label: 'Макс',
-                    data: Array(paramData.dates.length).fill(refMax),
-                    borderColor: 'rgba(220, 53, 69, 0.5)',
-                    borderDash: [5, 5],
-                    pointRadius: 0,
-                    fill: false
-                });
-            }
+        // Создаём секцию для типа
+        const section = document.createElement('div');
+        section.className = 'analysis-type-section';
+        section.innerHTML = `
+            <div class="section-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>
+                    ${ANALYSIS_TYPE_NAMES[type] || type}
+                    <span class="filter-badge">${Object.keys(grouped[type]).length} параметров</span>
+                </h4>
+            </div>
+        `;
+
+        const gridContainer = document.createElement('div');
+        gridContainer.className = `charts-grid cols-${currentCols}`;
+        section.appendChild(gridContainer);
+
+        container.appendChild(section);
+
+        // Рендерим графики для этого типа
+        Object.entries(grouped[type]).forEach(([paramKey, paramData]) => {
+            renderSingleChart(gridContainer, paramKey, paramData);
+        });
+    });
+}
+
+function renderSingleChart(gridContainer, paramKey, paramData) {
+    const card = document.createElement('div');
+    card.className = 'card parameter-card';
+    card.innerHTML = `
+        <div class="card-header bg-light">
+            <h6 class="mb-0">${paramData.name}</h6>
+            <small class="text-muted">${paramData.units || ''}</small>
+        </div>
+        <div class="card-body p-2">
+            <div class="chart-container">
+                <canvas id="chart-${paramKey}"></canvas>
+            </div>
+        </div>
+    `;
+    gridContainer.appendChild(card);
+
+    const ctx = document.getElementById(`chart-${paramKey}`).getContext('2d');
+    const hasReference = paramData.reference_min.some(v => v !== null);
+
+    const datasets = [{
+        label: paramData.name,
+        data: paramData.values,
+        borderColor: getLineColor(paramData.values, paramData.reference_min, paramData.reference_max),
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        segment: {
+            borderColor: ctx => getSegmentColor(ctx, paramData.reference_min, paramData.reference_max)
+        }
+    }];
+
+    if (hasReference) {
+        const refMin = paramData.reference_min[0];
+        const refMax = paramData.reference_max[0];
+
+        if (refMin !== null) {
+            datasets.push({
+                label: 'Мин',
+                data: Array(paramData.dates.length).fill(refMin),
+                borderColor: 'rgba(220, 53, 69, 0.5)',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+            });
         }
 
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: paramData.dates.map(d => new Date(d).toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit'
-                })),
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            boxWidth: 20,
-                            font: {
-                                size: 11
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                label += context.parsed.y.toFixed(2);
-                                if (paramData.units) {
-                                    label += ' ' + paramData.units;
-                                }
-                                return label;
-                            }
+        if (refMax !== null) {
+            datasets.push({
+                label: 'Макс',
+                data: Array(paramData.dates.length).fill(refMax),
+                borderColor: 'rgba(220, 53, 69, 0.5)',
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+            });
+        }
+    }
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: paramData.dates.map(d => new Date(d).toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: '2-digit'
+            })),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        boxWidth: 20,
+                        font: {
+                            size: 11
                         }
                     }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        ticks: {
-                            font: {
-                                size: 10
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
                             }
+                            label += context.parsed.y.toFixed(2);
+                            if (paramData.units) {
+                                label += ' ' + paramData.units;
+                            }
+                            return label;
                         }
-                    },
-                    x: {
-                        ticks: {
-                            font: {
-                                size: 10
-                            }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 10
                         }
                     }
                 }
             }
-        });
-
-        charts.push(chart);
+        }
     });
+
+    charts.push(chart);
 }
 
 function getLineColor(values, refMin, refMax) {
-    // Проверяем, выходят ли значения за референсы
     for (let i = 0; i < values.length; i++) {
         const value = values[i];
         const min = refMin[i];
         const max = refMax[i];
-        
+
         if ((min !== null && value < min) || (max !== null && value > max)) {
-            return 'rgba(220, 53, 69, 1)'; // Красный если есть отклонения
+            return 'rgba(220, 53, 69, 1)';
         }
     }
-    return 'rgba(13, 110, 253, 1)'; // Синий если все в норме
+    return 'rgba(13, 110, 253, 1)';
 }
 
 function getSegmentColor(ctx, refMin, refMax) {
@@ -289,11 +511,11 @@ function getSegmentColor(ctx, refMin, refMax) {
     const index = ctx.p1.$context.dataIndex;
     const min = refMin[index];
     const max = refMax[index];
-    
+
     if ((min !== null && value < min) || (max !== null && value > max)) {
-        return 'rgba(220, 53, 69, 1)'; // Красный
+        return 'rgba(220, 53, 69, 1)';
     }
-    return 'rgba(13, 110, 253, 1)'; // Синий
+    return 'rgba(13, 110, 253, 1)';
 }
 </script>
 {% endblock %}

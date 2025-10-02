@@ -5405,3 +5405,21 @@ Traceback (most recent call last):
     ...<2 lines>...
     )
 django.contrib.auth.models.User.profile.RelatedObjectDoesNotExist: User has no profile.
+2025-10-01 21:47:24,801 django.request ERROR Internal Server Error: /trends/data/
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/app/.venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/app/.venv/lib/python3.13/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+TypeError: trends_data() missing 1 required positional argument: 'analysis_type'
+2025-10-01 21:48:03,323 django.request ERROR Internal Server Error: /trends/data/
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/app/.venv/lib/python3.13/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/app/.venv/lib/python3.13/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+TypeError: trends_data() missing 1 required positional argument: 'analysis_type'

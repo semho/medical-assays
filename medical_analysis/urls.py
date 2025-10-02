@@ -23,5 +23,6 @@ urlpatterns = [
     path("partials/recent-sessions/", web_views.recent_sessions_partial, name="recent_sessions_partial"),
     # Изменение анализов по времени
     path("trends/", web_views.analysis_trends, name="analysis_trends"),
+    path("trends/data/", web_views.trends_data, name="trends_data_all"),
     path("trends/data/<str:analysis_type>/", web_views.trends_data, name="trends_data"),
 ]
