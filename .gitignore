@@ -12,3 +12,5 @@ staticfiles/
 logs
 *.log
 *.sqlite3
+temp_uploads/
+media/
