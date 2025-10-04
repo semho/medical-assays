@@ -1,3 +1,6 @@
+from medical_analysis.constants import UNITS_DICT
+
+
 def get_client_ip(request):
     """Получить IP адрес клиента"""
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")

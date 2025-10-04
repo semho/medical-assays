@@ -153,9 +153,9 @@
                                             <select class="form-select form-select-sm" 
                                                     name="status_{{ param.key }}"
                                                     {% if not edit_mode %}disabled{% endif %}>
-                                                <option value="норма" {% if param.status == "норма" %}selected{% endif %}>Норма</option>
-                                                <option value="повышен" {% if param.status == "повышен" %}selected{% endif %}>Повышен</option>
-                                                <option value="понижен" {% if param.status == "понижен" %}selected{% endif %}>Понижен</option>
+                                                <option value="норма" {% if param.status == 'норма' %}selected{% endif %}>Норма</option>
+                                                <option value="повышен" {% if param.status == 'повышен' %}selected{% endif %}>Повышен</option>
+                                                <option value="понижен" {% if param.status == 'понижен' %}selected{% endif %}>Понижен</option>
                                             </select>
                                         </td>
                                         <td>

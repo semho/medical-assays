@@ -12,8 +12,7 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from .constants.parameter_names import PARAMETER_NAMES_RU
-from .constants.type_map import PARAMETER_TYPE_MAP
+from .constants import PARAMETER_NAMES_RU, PARAMETER_TYPE_MAP
 from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
@@ -137,7 +136,7 @@ def upload_file(request):
                     json_dumps_params={"ensure_ascii": False},
                 )
 
-            return redirect("analysis_sessions")
+            return redirect('session_wait', session_id=session.pk)
 
         except Exception as e:
             error_msg = str(e)
@@ -292,7 +291,16 @@ def analysis_detail(request, analysis_id):
         messages.error(request, "Ошибка расшифровки данных")
         return redirect("analysis_results")
 
-    parsed_data = decrypted_data.get("parsed_data", {})
+    grouped_data = decrypted_data.get('grouped_data')
+
+    if grouped_data:
+        # Новый формат - объединяем все типы
+        parsed_data = {}
+        for type_key in ['blood_general', 'blood_biochem', 'hormones', 'other']:
+            parsed_data.update(grouped_data.get(type_key, {}))
+    else:
+        # Старый формат
+        parsed_data = decrypted_data.get('parsed_data', {})
 
     # Подготавливаем данные для отображения
     parameters_list = []
@@ -542,7 +550,6 @@ def recent_sessions_partial(request):
 @login_required
 def analysis_trends(request):
     """Страница графиков динамики показателей"""
-
     # Получаем доступные типы анализов у пользователя
     available_types = MedicalData.objects.filter(user=request.user).values_list("analysis_type", flat=True).distinct()
 
@@ -557,13 +564,13 @@ def analysis_trends(request):
 
     return render(request, "medical_analysis/trends.html", context)
 
+
 @login_required
 def trends_data(request, analysis_type=None):
-    """
-    API endpoint для получения данных графиков
-    Теперь с поддержкой групповых данных
-    """
+    """Получить данные графиков через API endpoint.
 
+    Теперь с поддержкой групповых данных.
+    """
     # Получаем все анализы пользователя
     analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date")
 
@@ -579,7 +586,7 @@ def trends_data(request, analysis_type=None):
             "reference_min": [],
             "reference_max": [],
             "name": None,
-            "analysis_type": None
+            "analysis_type": None,
         }
     )
 
@@ -591,24 +598,24 @@ def trends_data(request, analysis_type=None):
         date_str = analysis.analysis_date.isoformat()
 
         # НОВОЕ: Проверяем наличие групповых данных
-        grouped_data = decrypted.get('grouped_data', {})
+        grouped_data = decrypted.get("grouped_data", {})
 
         if grouped_data:
             # Новый формат с групповыми данными
             # Если тип указан - берём только его
-            if analysis_type and analysis_type != 'all':
+            if analysis_type and analysis_type != "all":
                 parsed_data = grouped_data.get(analysis_type, {})
             else:
                 # Объединяем все типы
                 parsed_data = {}
-                for type_key in ['blood_general', 'blood_biochem', 'hormones', 'other']:
+                for type_key in ["blood_general", "blood_biochem", "hormones", "other"]:
                     parsed_data.update(grouped_data.get(type_key, {}))
         else:
             # Старый формат (для совместимости)
-            parsed_data = decrypted.get('parsed_data', {})
+            parsed_data = decrypted.get("parsed_data", {})
 
             # Если указан фильтр по типу - фильтруем
-            if analysis_type and analysis_type != 'all':
+            if analysis_type and analysis_type != "all":
                 filtered_data = {}
                 for param_key, param_data in parsed_data.items():
                     param_real_type = PARAMETER_TYPE_MAP.get(param_key.lower())
@@ -623,13 +630,13 @@ def trends_data(request, analysis_type=None):
 
             # Получаем значение
             if isinstance(param_data, dict):
-                value = param_data.get('value')
-                unit = param_data.get('unit', '')
-                reference = param_data.get('reference', '')
+                value = param_data.get("value")
+                unit = param_data.get("unit", "")
+                reference = param_data.get("reference", "")
             else:
                 value = param_data
-                unit = ''
-                reference = ''
+                unit = ""
+                reference = ""
 
             try:
                 value_float = float(value)
@@ -642,7 +649,7 @@ def trends_data(request, analysis_type=None):
 
             # Тип анализа для параметра
             if not parameters_data[param_key]["analysis_type"]:
-                parameters_data[param_key]["analysis_type"] = param_real_type or 'other'
+                parameters_data[param_key]["analysis_type"] = param_real_type or "other"
 
             # Единицы измерения
             if not parameters_data[param_key]["units"]:
@@ -670,6 +677,49 @@ def trends_data(request, analysis_type=None):
             result[param_key] = data
 
     return JsonResponse(result)
+
+
+@login_required
+def session_wait(request, session_id):
+    """Страница ожидания обработки с автоматическим редиректом"""
+    session = get_object_or_404(AnalysisSession, id=session_id, user=request.user)
+
+    # Если обработка завершена - перенаправляем на подтверждение
+    if session.processing_status == Status.COMPLETED and hasattr(session, "medical_data") and session.medical_data:
+        return redirect("analysis_detail", analysis_id=session.medical_data.id)
+
+    # Если ошибка - показываем сообщение
+    if session.processing_status == Status.ERROR:
+        messages.error(request, f"Ошибка обработки: {session.error_message}")
+        return redirect("upload_file")
+
+    context = {
+        "session": session,
+    }
+
+    return render(request, "medical_analysis/session_wait.html", context)
+
+
+@login_required
+def check_session_status(request, session_id):
+    """AJAX endpoint для проверки статуса сессии"""
+    session = get_object_or_404(AnalysisSession, id=session_id, user=request.user)
+
+    response_data = {
+        "status": session.processing_status,
+        "analysis_type": session.analysis_type,
+    }
+
+    # Если обработка завершена, возвращаем URL для редиректа
+    if session.processing_status == Status.COMPLETED:
+        if hasattr(session, "medical_data") and session.medical_data:
+            response_data["redirect_url"] = f"/results/{session.medical_data.id}/"
+
+    elif session.processing_status == Status.ERROR:
+        response_data["error_message"] = session.error_message
+
+    return JsonResponse(response_data)
+
 
 def parse_reference_range(reference_str):
     """Парсинг референсного диапазона из строки"""

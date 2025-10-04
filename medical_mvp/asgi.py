@@ -1,5 +1,4 @@
-"""
-ASGI config for medical_mvp project.
+"""ASGI config for medical_mvp project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

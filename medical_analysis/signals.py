@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from medical_analysis.enums import Status
-from medical_analysis.models import MedicalData, AnalysisSession, SecurityLog
+from medical_analysis.models import MedicalData, SecurityLog
 import logging
 
 logger = logging.getLogger(__name__)

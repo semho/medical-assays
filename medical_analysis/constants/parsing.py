@@ -132,6 +132,12 @@ LABORATORY_SIGNATURES = {
         "cmd-online",
         "центр молекулярной диагностики",
     ],
+    LaboratoryType.CITILAB.name: [
+        "ситилаб",
+        "citilab",
+        "www.citilab.ru",
+        "сити лаб",
+    ],
 }
 
 # Паттерны для референсных диапазонов

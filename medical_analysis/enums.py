@@ -28,4 +28,5 @@ class LaboratoryType(models.TextChoices):
     KDL = "kdl", "КДЛ"
     GEMOTEST = "gemotest", "Гемотест"
     CMD = "cmd", "ЦМД"
+    CITILAB = "citilab", "Ситилаб"
     UNKNOWN = "unknown", "Неизвестно"

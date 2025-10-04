@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressText.textContent = 'Анализ данных...';
             }
         }, 1000);
-        
+
         // Проверка статуса обработки
         const statusInterval = setInterval(() => {
             fetch(`/api/upload/status/?session_id=${sessionId}`)
@@ -306,18 +306,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.status === 'completed') {
                         clearInterval(progressInterval);
                         clearInterval(statusInterval);
-                        
+
                         progressBar.style.width = '100%';
                         progressPercentage.textContent = '100%';
                         progressText.textContent = 'Готово!';
-                        
+
                         setTimeout(() => {
                             window.location.href = '/results/';
                         }, 2000);
                     } else if (data.status === 'error') {
                         clearInterval(progressInterval);
                         clearInterval(statusInterval);
-                        
+
                         processingCard.style.display = 'none';
                         showError(data.error_message || 'Ошибка обработки файла');
                     }

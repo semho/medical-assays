@@ -5,10 +5,13 @@ import re
 import tiktoken
 from openai import OpenAI
 from django.conf import settings
+
+from medical_analysis.constants import GPT_PARSER_ALIASES
 from medical_analysis.constants.prompts import BLOOD_GENERAL_PROMPT, BLOOD_BIOCHEM_PROMPT, HORMONES_PROMPT
 from medical_analysis.enums import AnalysisType
 
 logger = logging.getLogger(__name__)
+
 
 class GPTMedicalParser:
     """Парсер медицинских анализов через GPT с поддержкой разных лабораторий"""
@@ -41,12 +44,7 @@ class GPTMedicalParser:
         logger.warning(f"Текст обрезан с {len(tokens)} до {len(truncated_tokens)} токенов")
         return truncated_text
 
-    def parse_analysis(
-            self,
-            text: str,
-            analysis_type: str = "blood_general",
-            laboratory: str = "unknown"
-    ) -> dict:
+    def parse_analysis(self, text: str, analysis_type: str = "blood_general", laboratory: str = "unknown") -> dict:
         """
         Парсинг анализа через GPT с контролем токенов
 
@@ -76,10 +74,7 @@ class GPTMedicalParser:
         # Подсчитываем общее количество токенов запроса
         system_tokens = self.count_tokens(system_prompt)
         total_request_tokens = system_tokens + input_tokens
-        logger.info(
-            f"Общий запрос: {total_request_tokens} токенов "
-            f"(система: {system_tokens}, текст: {input_tokens})"
-        )
+        logger.info(f"Общий запрос: {total_request_tokens} токенов (система: {system_tokens}, текст: {input_tokens})")
 
         try:
             response = self.client.chat.completions.create(
@@ -135,7 +130,7 @@ class GPTMedicalParser:
 
         # Добавляем специфичные инструкции для известных лабораторий
         lab_hints = {
-            'invitro': """
+            "invitro": """
 
             ОСОБЕННОСТИ INVITRO:
             - Единицы измерения часто идут ПЕРЕД названием параметра
@@ -143,20 +138,20 @@ class GPTMedicalParser:
             - Референсные значения обычно в конце строки
             - Код исследования вида "A09.05.XXX" - игнорируй
             """,
-            'helix': """
+            "helix": """
 
             ОСОБЕННОСТИ HELIX:
             - Строгий табличный формат с фиксированными колонками
             - Формат: "Параметр | Значение | Единицы | Референс"
             - Отклонения помечены символом *
             """,
-            'kdl': """
+            "kdl": """
 
             ОСОБЕННОСТИ КДЛ:
             - Смешанный формат, может быть и табличный и построчный
             - Референсные значения иногда на отдельной строке
             """,
-            'gemotest': """
+            "gemotest": """
 
             ОСОБЕННОСТИ GEMOTEST:
             - Похож на Invitro
@@ -176,11 +171,51 @@ class GPTMedicalParser:
         }
 
         model_prices = prices.get(self.model, prices["gpt-4o-mini"])
-        cost = (
-                (input_tokens / 1_000_000 * model_prices["input"]) +
-                (output_tokens / 1_000_000 * model_prices["output"])
-        )
+        cost = (input_tokens / 1_000_000 * model_prices["input"]) + (output_tokens / 1_000_000 * model_prices["output"])
         return cost
+
+
+def format_gpt_result(gpt_data: dict) -> dict:
+    """Форматирует результат GPT"""
+    formatted = {}
+
+    parameters = gpt_data.get("parameters", {})
+
+    # Маппинг для унификации ключей
+    key_aliases = GPT_PARSER_ALIASES
+
+    for key, data in parameters.items():
+        unified_key = key_aliases.get(key.lower(), key.lower())
+        if isinstance(data, dict):
+            value = data.get("value")
+            unit = data.get("unit", "")
+
+            # Если значение содержит %, выносим в unit
+            if isinstance(value, str) and "%" in value:
+                value = value.replace("%", "").strip()
+                unit = unit or "%"
+                try:
+                    value = float(value.replace(",", "."))
+                except ValueError:
+                    pass
+            elif isinstance(value, str):
+                value = value.replace(",", ".").strip()
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+
+            formatted[unified_key] = {
+                "value": value,
+                "unit": unit,
+                "reference": data.get("reference", ""),
+                "status": data.get("status", "неизвестно"),
+            }
+        else:
+            formatted[unified_key] = {"value": data}
+
+    return formatted
+
 
 def preprocess_analysis_text(text: str) -> str:
     """Предобработка текста для улучшения распознавания"""

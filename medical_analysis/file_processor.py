@@ -9,10 +9,18 @@ import re
 from django.conf import settings
 from django.utils import timezone
 
-from .constants import PARAMETER_TYPE_MAP, LABORATORY_SIGNATURES, HORMONES_PARSER, BLOOD_PARSER, BLOOD_LEUKO_PARAMS, \
-    RANGES_PARSER, BIOCHEM_PARSER, ANALYSIS_KEYWORDS
+from .constants import (
+    PARAMETER_TYPE_MAP,
+    LABORATORY_SIGNATURES,
+    HORMONES_PARSER,
+    BLOOD_PARSER,
+    BLOOD_LEUKO_PARAMS,
+    RANGES_PARSER,
+    BIOCHEM_PARSER,
+    ANALYSIS_KEYWORDS,
+)
 from .enums import AnalysisType, Status, LaboratoryType
-from .gpt_parser import GPTMedicalParser
+from .gpt_parser import GPTMedicalParser, format_gpt_result
 from .models import AnalysisSession, MedicalData, SecurityLog
 from celery import shared_task
 
@@ -554,8 +562,8 @@ def process_medical_file(session_id: int):
         grouped_results = grouped_parser.parse_all_types(extracted_text)
 
         # Определяем лабораторию
-        laboratory = grouped_results['_metadata']['laboratory']
-        parsing_method = grouped_results['_metadata']['parsing_method']
+        laboratory = grouped_results["_metadata"]["laboratory"]
+        parsing_method = grouped_results["_metadata"]["parsing_method"]
 
         # Определяем основной тип для совместимости
         primary_type = grouped_parser.determine_primary_type(grouped_results)
@@ -569,15 +577,20 @@ def process_medical_file(session_id: int):
         # 3. Подготавливаем объединённые данные для старого формата (для совместимости)
         # Объединяем все параметры в один словарь для отображения
         all_parameters = {}
-        for analysis_type in [AnalysisType.BLOOD_GENERAL, AnalysisType.BLOOD_BIOCHEM, AnalysisType.HORMONES, AnalysisType.OTHER]:
+        for analysis_type in [
+            AnalysisType.BLOOD_GENERAL,
+            AnalysisType.BLOOD_BIOCHEM,
+            AnalysisType.HORMONES,
+            AnalysisType.OTHER,
+        ]:
             all_parameters.update(grouped_results.get(analysis_type, {}))
 
         # 4. Подсчитываем статистику
         params_by_type = {
-            AnalysisType.BLOOD_GENERAL.name: len(grouped_results.get('blood_general', {})),
-            AnalysisType.BLOOD_BIOCHEM.name: len(grouped_results.get('blood_biochem', {})),
-            AnalysisType.HORMONES.name: len(grouped_results.get('hormones', {})),
-            AnalysisType.OTHER.name: len(grouped_results.get('other', {})),
+            "blood_general": len(grouped_results.get("blood_general", {})),
+            "blood_biochem": len(grouped_results.get("blood_biochem", {})),
+            "hormones": len(grouped_results.get("hormones", {})),
+            "other": len(grouped_results.get("other", {})),
         }
 
         total_params = sum(params_by_type.values())
@@ -590,30 +603,30 @@ def process_medical_file(session_id: int):
             analysis_type=primary_type,
             analysis_date=timezone.now().date(),
             laboratory=laboratory,
-            is_confirmed=False  # Требует подтверждения пользователем
+            is_confirmed=False,  # Требует подтверждения пользователем
         )
 
         # 6. Формируем полную структуру данных для сохранения
         full_data = {
             # Групповые данные (новый формат)
-            'grouped_data': {
-                'blood_general': grouped_results.get('blood_general', {}),
-                'blood_biochem': grouped_results.get('blood_biochem', {}),
-                'hormones': grouped_results.get('hormones', {}),
-                'other': grouped_results.get('other', {}),
+            "grouped_data": {
+                "blood_general": grouped_results.get("blood_general", {}),
+                "blood_biochem": grouped_results.get("blood_biochem", {}),
+                "hormones": grouped_results.get("hormones", {}),
+                "other": grouped_results.get("other", {}),
             },
             # Объединённые данные (старый формат для совместимости)
-            'parsed_data': all_parameters,
+            "parsed_data": all_parameters,
             # Метаданные
-            'raw_text': extracted_text,
-            'processing_info': {
-                'processed_at': timezone.now().isoformat(),
-                'file_name': session.original_filename,
-                'primary_type': primary_type,
-                'laboratory': laboratory,
-                'parsing_method': parsing_method,
-                'total_parameters': total_params,
-                'parameters_by_type': params_by_type,
+            "raw_text": extracted_text,
+            "processing_info": {
+                "processed_at": timezone.now().isoformat(),
+                "file_name": session.original_filename,
+                "primary_type": primary_type,
+                "laboratory": laboratory,
+                "parsing_method": parsing_method,
+                "total_parameters": total_params,
+                "parameters_by_type": params_by_type,
             },
         }
 
@@ -627,8 +640,7 @@ def process_medical_file(session_id: int):
 
         # 9. Планируем удаление временного файла
         schedule_file_deletion.apply_async(
-            args=[session.temp_file_path, session_id],
-            countdown=settings.FILE_RETENTION_SECONDS
+            args=[session.temp_file_path, session_id], countdown=settings.FILE_RETENTION_SECONDS
         )
 
         # 10. Логируем успех
@@ -636,10 +648,10 @@ def process_medical_file(session_id: int):
             user=session.user,
             action="FILE_PROCESSED",
             details=f"Файл обработан ({parsing_method}, лаб: {laboratory}). "
-                    f"Найдено параметров: {total_params} "
-                    f"(ОАК: {params_by_type['blood_general']}, "
-                    f"Биохимия: {params_by_type['blood_biochem']}, "
-                    f"Гормоны: {params_by_type['hormones']})",
+            f"Найдено параметров: {total_params} "
+            f"(ОАК: {params_by_type['blood_general']}, "
+            f"Биохимия: {params_by_type['blood_biochem']}, "
+            f"Гормоны: {params_by_type['hormones']})",
             ip_address=None,
         )
 
@@ -659,7 +671,7 @@ def process_medical_file(session_id: int):
             if session.temp_file_path and Path(session.temp_file_path).exists():
                 schedule_file_deletion.apply_async(
                     args=[session.temp_file_path, session_id],
-                    countdown=10  # Удаляем через 10 секунд при ошибке
+                    countdown=10,  # Удаляем через 10 секунд при ошибке
                 )
 
         raise
@@ -684,7 +696,7 @@ class GroupedAnalysisParser:
                 logger.info(f"Обнаружена лаборатория: {lab}")
                 return lab
 
-        return  self.laboratory
+        return self.laboratory
 
     def parse_all_types(self, text: str) -> dict:
         """
@@ -809,11 +821,11 @@ class GroupedAnalysisParser:
             # Определяем тип параметра
             param_type = PARAMETER_TYPE_MAP.get(param_key.lower())
 
-            if param_type == AnalysisType.BLOOD_GENERAL:
+            if param_type == "blood_general":
                 grouped_results["blood_general"][param_key] = param_value
-            elif param_type == AnalysisType.BLOOD_BIOCHEM:
+            elif param_type == "blood_biochem":
                 grouped_results["blood_biochem"][param_key] = param_value
-            elif param_type == AnalysisType.HORMONES:
+            elif param_type == "hormones":
                 grouped_results["hormones"][param_key] = param_value
             else:
                 # Неизвестный параметр - кладём в other
@@ -826,9 +838,9 @@ class GroupedAnalysisParser:
         """Определение основного типа анализа для совместимости"""
         # Считаем количество параметров в каждом типе
         counts = {
-            AnalysisType.BLOOD_GENERAL.name: len(grouped_results.get("blood_general", {})),
-            AnalysisType.BLOOD_BIOCHEM.name: len(grouped_results.get("blood_biochem", {})),
-            AnalysisType.HORMONES.name: len(grouped_results.get("hormones", {})),
+            "blood_general": len(grouped_results.get("blood_general", {})),
+            "blood_biochem": len(grouped_results.get("blood_biochem", {})),
+            "hormones": len(grouped_results.get("hormones", {})),
         }
 
         # Возвращаем тип с максимальным количеством параметров
