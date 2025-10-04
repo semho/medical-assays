@@ -11,6 +11,8 @@ class LanguageChoices(models.TextChoices):
 class Status(models.TextChoices):
     UPLOADING = "uploading", "Загрузка"
     PROCESSING = "processing", "Обработка"
+    OCR = "ocr", "Распознавание текста"
+    PARSING = "parsing", "Анализ данных"
     COMPLETED = "completed", "Завершено"
     ERROR = "error", "Ошибка"
 

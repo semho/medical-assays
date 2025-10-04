@@ -158,7 +158,34 @@ class MedicalDataParser:
             "urea": [r"мочевина.*?(\d+[\.,]?\d*)", r"urea.*?(\d+[\.,]?\d*)"],
         }
 
-    def parse_hormones(self, text: str) -> dict[str, float]:
+    def _get_hormone_unit(self, param_key: str, lines: list[str]) -> str:
+        """извлечение единицы измерения для гормонов"""
+        unit_patterns = {
+            "tsh": r"мкме/мл|μiu/ml",
+            "free_t4": r"пмоль/л|pmol/l",
+            "free_t3": r"пмоль/л|pmol/l",
+            "testosterone": r"нмоль/л|nmol/l",
+            "estradiol": r"пг/мл|pg/ml",
+            "progesterone": r"нмоль/л|nmol/l",
+            "cortisol": r"нмоль/л|nmol/l",
+        }
+
+        for line in lines:
+            line_lower = line.lower()
+            if param_key in unit_patterns:
+                match = re.search(unit_patterns[param_key], line_lower)
+                if match:
+                    return match.group(0)
+
+            # общий поиск единиц измерения
+            common_units = re.search(r"(мкме/мл|пмоль/л|нмоль/л|пг/мл|μiu/ml|pmol/l|nmol/l|pg/ml)", line_lower)
+            if common_units:
+                return common_units.group(0)
+
+        return ""
+
+    def parse_hormones(self, text: str) -> dict:
+        """парсинг гормональных анализов с полной структурой"""
         results = {}
         lines = text.split("\n")
 
@@ -169,77 +196,69 @@ class MedicalDataParser:
 
             for param_key, keywords in params_map.items():
                 if any(keyword in line_lower for keyword in keywords):
-                    for offset in range(1, 4):  # Проверяем следующие строки
+                    for offset in range(1, 4):
                         if i + offset >= len(lines):
                             break
+
                         check_line = lines[i + offset].strip()
                         match = re.search(r"(\d+[\.,]\d+|\d+)\*?", check_line)
+
                         if match:
                             try:
                                 value = float(match.group(1).replace(",", "."))
-                                if self._validate_value(param_key, value):  # Расширь _validate_value для гормонов
-                                    results[param_key] = value
-                                    logger.info(f"Найден {param_key}: {value}")
-                                    break
+                                if param_key not in results:
+                                    results[param_key] = {
+                                        "value": value,
+                                        "unit": self._get_hormone_unit(param_key, lines[i:i + offset + 1]),
+                                        "reference": self._get_reference(lines[i:i + offset + 1]),
+                                        "status": self._determine_status(lines[i:i + offset + 1], value),
+                                    }
+                                    logger.info(f"найден {param_key}: {value}")
+                                break
                             except ValueError:
                                 continue
                     break
 
         return results
-
-    def parse_blood_general(self, text: str) -> dict[str, float]:
-        """Парсинг ОАК с учетом табличной структуры"""
+    def parse_blood_general(self, text: str) -> dict:
+        """парсинг общего анализа крови с полной структурой"""
         results = {}
         lines = text.split("\n")
 
-        # Границы секции ОАК
-        start_idx = 0
-        end_idx = len(lines)
+        params_map = BLOOD_PARSER
+        leuko_params_map = BLOOD_LEUKO_PARAMS
 
         for i, line in enumerate(lines):
-            if "общий анализ крови" in line.lower() or "cbc" in line.lower():
-                start_idx = i
-            if "биохимические исследования" in line.lower() or "гормональные" in line.lower():
-                end_idx = i
-                break
+            line_lower = line.lower().strip()
 
-        params_map = BLOOD_PARSER
-        leuko_params = BLOOD_LEUKO_PARAMS
-
-        for i in range(start_idx, end_idx):
-            if i >= len(lines):
-                break
-
-            line_lower = lines[i].lower().strip()
-
-            for param_key, keywords in params_map.items():
-                if param_key in results:
-                    continue
-
-                # Для лейкоформулы ЯВНО ищем строку с %, а не абсолютное
-                if param_key in leuko_params:
-                    # Ищем строку типа "Нейтрофилы (Ne), %"
-                    if any(keyword in line_lower for keyword in keywords) and "%" in line_lower:
+            for param_key, keywords in {**params_map, **leuko_params_map}.items():
+                if any(keyword in line_lower for keyword in keywords):
+                    # для процентных значений
+                    if param_key in leuko_params_map:
                         for offset in range(1, 4):
                             if i + offset >= len(lines):
                                 break
 
                             check_line = lines[i + offset].strip()
-                            match = re.search(r"(\d+[\.,]\d+|\d+)\*?", check_line)
+                            match = re.search(r"(\d+[\.,]\d+|\d+)%?", check_line)
 
                             if match:
                                 try:
                                     value = float(match.group(1).replace(",", "."))
                                     if 0 <= value <= 100:
-                                        results[param_key] = value
-                                        logger.info(f"Найден {param_key}: {value}%")
+                                        results[param_key] = {
+                                            "value": value,
+                                            "unit": "%",
+                                            "reference": self._get_reference(lines[i:i + offset + 1]),
+                                            "status": self._determine_status(lines[i:i + offset + 1], value),
+                                        }
+                                        logger.info(f"найден {param_key}: {value}%")
                                         break
                                 except ValueError:
                                     continue
                         break
-                else:
-                    # Для остальных параметров - обычный поиск
-                    if any(keyword in line_lower for keyword in keywords):
+                    else:
+                        # для остальных параметров
                         for offset in range(1, 4):
                             if i + offset >= len(lines):
                                 break
@@ -251,8 +270,13 @@ class MedicalDataParser:
                                 try:
                                     value = float(match.group(1).replace(",", "."))
                                     if self._validate_value(param_key, value):
-                                        results[param_key] = value
-                                        logger.info(f"Найден {param_key}: {value}")
+                                        results[param_key] = {
+                                            "value": value,
+                                            "unit": self._get_unit(param_key, lines[i:i + offset + 1]),
+                                            "reference": self._get_reference(lines[i:i + offset + 1]),
+                                            "status": self._determine_status(lines[i:i + offset + 1], value),
+                                        }
+                                        logger.info(f"найден {param_key}: {value}")
                                         break
                                 except ValueError:
                                     continue
@@ -270,8 +294,8 @@ class MedicalDataParser:
 
         return True
 
-    def parse_blood_biochem(self, text: str) -> dict[str, float]:
-        """Парсинг биохимии с учетом табличной структуры"""
+    def parse_blood_biochem(self, text: str) -> dict:
+        """парсинг биохимии с полной структурой"""
         results = {}
         lines = text.split("\n")
 
@@ -282,24 +306,25 @@ class MedicalDataParser:
 
             for param_key, keywords in params_map.items():
                 if any(keyword in line_lower for keyword in keywords):
-                    for offset in range(1, 4):  # Проверяем следующие строки
+                    for offset in range(1, 4):
                         if i + offset >= len(lines):
                             break
+
                         check_line = lines[i + offset].strip()
                         match = re.search(r"(\d+[\.,]\d+|\d+|\d+\.\d+)\*?", check_line)
+
                         if match:
                             try:
                                 value = float(match.group(1).replace(",", "."))
                                 if self._validate_value(param_key, value):
-                                    # Проверяем, не встречался ли параметр ранее
                                     if param_key not in results:
                                         results[param_key] = {
                                             "value": value,
-                                            "unit": self._get_unit(param_key, lines[i : i + offset + 1]),
-                                            "reference": self._get_reference(lines[i : i + offset + 1]),
-                                            "status": self._determine_status(lines[i : i + offset + 1], value),
+                                            "unit": self._get_unit(param_key, lines[i:i + offset + 1]),
+                                            "reference": self._get_reference(lines[i:i + offset + 1]),
+                                            "status": self._determine_status(lines[i:i + offset + 1], value),
                                         }
-                                        logger.info(f"Найден {param_key}: {value}")
+                                        logger.info(f"найден {param_key}: {value}")
                                 break
                             except ValueError:
                                 continue
@@ -545,19 +570,25 @@ def process_medical_file(session_id: int):
         session = AnalysisSession.objects.get(id=session_id)
         session.processing_started = timezone.now()
         session.processing_status = Status.PROCESSING
-        session.save()
+        session.save(update_fields=["processing_started", "processing_status"])
 
         if not session.temp_file_path or not Path(session.temp_file_path).exists():
             raise FileNotFoundError("Временный файл не найден")
 
         # 1. OCR - извлекаем текст
         logger.info(f"=== Сессия {session_id}: OCR ===")
+        session.processing_status = Status.OCR
+        session.save(update_fields=["processing_status"])
+
         ocr_processor = OCRProcessor()
         extracted_text = ocr_processor.process_file(session.temp_file_path)
         logger.info(f"Извлечено {len(extracted_text)} символов")
 
         # 2. НОВОЕ: Групповой парсинг всех типов
         logger.info(f"=== Сессия {session_id}: Групповой парсинг ===")
+        session.processing_status = Status.PARSING
+        session.save(update_fields=["processing_status"])
+
         grouped_parser = GroupedAnalysisParser()
         grouped_results = grouped_parser.parse_all_types(extracted_text)
 

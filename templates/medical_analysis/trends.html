@@ -400,7 +400,12 @@ function renderSingleChart(gridContainer, paramKey, paramData) {
         pointHoverRadius: 6,
         segment: {
             borderColor: ctx => getSegmentColor(ctx, paramData.reference_min, paramData.reference_max)
-        }
+        },
+        pointStyle: paramData.operators ? paramData.operators.map(op => {
+            if (op === '<' || op === '≤') return 'triangle';
+            if (op === '>' || op === '≥') return 'rectRot';
+            return 'circle';
+        }) : 'circle'
     }];
 
     if (hasReference) {

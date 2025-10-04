@@ -38,14 +38,24 @@
         <div class="card shadow-lg">
             <div class="card-body text-center p-5">
                 <div id="processing-view">
-                    <div class="spinner-border spinner-large text-primary mb-4" role="status">
-                        <span class="visually-hidden">Обработка...</span>
+                    <h3 class="mb-4">Обрабатываем ваш анализ</h3>
+
+                    <!-- НОВЫЙ ПРОГРЕСС-БАР -->
+                    <div class="mb-4">
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 id="progress-bar"
+                                 role="progressbar"
+                                 style="width: 10%"
+                                 aria-valuenow="10"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                <span id="progress-percentage">10%</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <h3 class="mb-3">Обрабатываем ваш анализ</h3>
-                    <p class="text-muted progress-text">
-                        Это может занять от 10 до 30 секунд
-                    </p>
+
+                    <p class="text-primary" id="progress-message">загрузка файла...</p>
                     
                     <div class="file-info mt-4">
                         <h6 class="text-muted mb-2">
@@ -90,36 +100,76 @@ const sessionId = {{ session.id }};
 let checkInterval;
 let checksCount = 0;
 const maxChecks = 60; // Максимум 2 минуты ожидания
+let currentProgress = 10;
 
 function checkStatus() {
     checksCount++;
     
-    // Защита от бесконечного опроса
     if (checksCount > maxChecks) {
         clearInterval(checkInterval);
         showError('Превышено время ожидания обработки. Попробуйте загрузить файл снова.');
         return;
     }
-    
+
     fetch(`/sessions/${sessionId}/check-status/`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Status:', data.status);
-            
-            if (data.status === 'completed') {
-                clearInterval(checkInterval);
-                // Редирект на страницу подтверждения
-                if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
+    .then(response => response.json())
+    .then(data => {
+        console.log('Status:', data.status, 'Progress:', data.progress);
+
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const progressMessage = document.getElementById('progress-message');
+
+        // Плавное увеличение до реального значения
+        if (data.progress > currentProgress) {
+            const targetProgress = data.progress;
+            const step = (targetProgress - currentProgress) / 5; // разбиваем на 5 шагов
+
+            const smoothInterval = setInterval(() => {
+                currentProgress += step;
+                if (currentProgress >= targetProgress) {
+                    currentProgress = targetProgress;
+                    clearInterval(smoothInterval);
                 }
-            } else if (data.status === 'error') {
-                clearInterval(checkInterval);
-                showError(data.error_message || 'Произошла ошибка при обработке файла');
-            }
-        })
-        .catch(error => {
-            console.error('Error checking status:', error);
-        });
+
+                progressBar.style.width = currentProgress + '%';
+                progressBar.setAttribute('aria-valuenow', currentProgress);
+                progressPercentage.textContent = Math.round(currentProgress) + '%';
+            }, 100);
+        }
+
+        if (progressMessage && data.message) {
+            progressMessage.textContent = data.message;
+        }
+
+        if (data.status === 'completed') {
+            clearInterval(checkInterval);
+            currentProgress = 100;
+            progressBar.style.width = '100%';
+            progressPercentage.textContent = '100%';
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.add('bg-success');
+
+            // ИСПРАВЛЕНО: редирект на конкретный анализ
+            setTimeout(() => {
+                // получаем ID анализа из бэкенда
+                fetch(`/sessions/${sessionId}/check-status/`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.analysis_id) {
+                            window.location.href = `/results/${d.analysis_id}/`;
+                        } else {
+                            window.location.href = '/results/';
+                        }
+                    });
+            }, 1500);
+        } else if (data.status === 'error') {
+            clearInterval(checkInterval);
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.add('bg-danger');
+            showError(data.error_message || 'Произошла ошибка при обработке файла');
+        }
+    })
 }
 
 function showError(message) {
