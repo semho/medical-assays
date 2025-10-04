@@ -1,6 +1,6 @@
 {% extends 'medical_analysis/base.html' %}
 {% load static %}
-
+{% load l10n %}
 {% block title %}Подтверждение анализа{% endblock %}
 
 {% block extra_css %}
@@ -113,7 +113,9 @@
                                         <th style="width: 15%">Единицы</th>
                                         <th style="width: 20%">Референс</th>
                                         <th style="width: 15%">Статус</th>
-                                        <th style="width: 5%"></th>
+                                        {% if edit_mode %}
+                                        <th style="width: 5%"><!-- Удалить --></th>
+                                        {% endif %}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -125,11 +127,12 @@
                                             <small class="text-muted">{{ param.key }}</small>
                                         </td>
                                         <td>
-                                            <input type="number" 
-                                                   step="0.01" 
-                                                   class="form-control form-control-sm" 
+                                            <input type="text"
+                                                   class="form-control form-control-sm value-input"
                                                    name="value_{{ param.key }}"
-                                                   value="{{ param.value }}"
+                                                   value="{{ param.value|unlocalize }}"
+                                                   pattern="^(<|>|≤|≥)?\s*\d+([.,]\d+)?$"
+                                                   title="Введите число или значение с оператором (< 0.30, > 100 и т.д.)"
                                                    {% if not edit_mode %}disabled{% endif %}
                                                    required>
                                         </td>
@@ -161,6 +164,16 @@
                                         <td>
                                             <span class="status-indicator status-{{ param.status }}"></span>
                                         </td>
+                                        {% if edit_mode %}
+                                        <td>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger delete-param-btn"
+                                                    data-param-key="{{ param.key }}"
+                                                    title="Удалить параметр">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                        {% endif %}
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -238,8 +251,31 @@
 </div>
 
 <script>
+function validateValue(input) {
+    const value = input.value.trim();
+
+    // Разрешенные форматы:
+    // 123, 123.45, < 0.30, > 100, ≤ 5, ≥ 10
+    const pattern = /^(<|>|≤|≥)?\s*\d+([.,]\d+)?$/;
+
+    if (!pattern.test(value)) {
+        input.classList.add('is-invalid');
+        return false;
+    }
+
+    input.classList.remove('is-invalid');
+    return true;
+}
 // Автодополнение для единиц измерения
 document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем валидацию при вводе
+    document.querySelectorAll('.value-input').forEach(input => {
+        input.addEventListener('blur', function() {
+            validateValue(this);
+        });
+    });
+
+
     const unitInputs = document.querySelectorAll('.unit-autocomplete');
     
     unitInputs.forEach(input => {
@@ -254,6 +290,21 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             const action = e.submitter?.value;
             if (action === 'confirm') {
+                let hasErrors = false;
+
+                // Проверяем все поля значений
+                document.querySelectorAll('.value-input').forEach(input => {
+                    if (!validateValue(input)) {
+                        hasErrors = true;
+                    }
+                });
+
+                if (hasErrors) {
+                    e.preventDefault();
+                    alert('Проверьте введенные значения. Допустимые форматы: 123.45, < 0.30, > 100');
+                    return false;
+                }
+
                 const confirmed = confirm('Вы уверены, что все данные проверены и корректны?');
                 if (!confirmed) {
                     e.preventDefault();
@@ -261,6 +312,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    document.querySelectorAll('.delete-param-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (confirm('Удалить этот параметр?')) {
+                this.closest('tr').remove();
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

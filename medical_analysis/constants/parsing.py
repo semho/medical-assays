@@ -103,36 +103,36 @@ UNIT_PATTERNS = {
 
 # Сигнатуры лабораторий
 LABORATORY_SIGNATURES = {
-    LaboratoryType.INVITRO.name: [
+    LaboratoryType.INVITRO: [
         "инвитро",
         "invitro",
         "www.invitro.ru",
         "cmd-online.ru",
     ],
-    LaboratoryType.HELIX.name: [
+    LaboratoryType.HELIX: [
         "хеликс",
         "helix",
         "www.helix.ru",
         "cmd helix",
     ],
-    LaboratoryType.KDL.name: [
+    LaboratoryType.KDL: [
         "кдл",
         "kdl",
         "kdlmed.ru",
         "клинико-диагностическая лаборатория",
     ],
-    LaboratoryType.GEMOTEST.name: [
+    LaboratoryType.GEMOTEST: [
         "гемотест",
         "gemotest",
         "gemotest.ru",
     ],
-    LaboratoryType.CMD.name: [
+    LaboratoryType.CMD: [
         "цмд",
         "cmd",
         "cmd-online",
         "центр молекулярной диагностики",
     ],
-    LaboratoryType.CITILAB.name: [
+    LaboratoryType.CITILAB: [
         "ситилаб",
         "citilab",
         "www.citilab.ru",

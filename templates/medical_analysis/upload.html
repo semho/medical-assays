@@ -261,73 +261,17 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = JSON.parse(e.detail.xhr.response);
                 if (data.success) {
-                    showSuccess(data.message || 'Файл успешно загружен');
-                    showProcessing(data.session_id);
-                    clearFile();
+                    // редирект на страницу ожидания
+                    window.location.href = `/sessions/${data.session_id}/wait/`;
                 } else {
-                    showError(data.error || 'Ошибка загрузки');
+                    showError(data.error || 'ошибка загрузки');
                 }
             } catch (error) {
-                showError('Ошибка обработки ответа сервера');
-                console.error('Ошибка парсинга ответа:', error);
+                showError('ошибка обработки ответа сервера');
+                console.error('ошибка парсинга ответа:', error);
             }
         }
     });
-    
-    function showProcessing(sessionId) {
-        processingCard.style.display = 'block';
-        let progress = 0;
-        const progressBar = document.getElementById('progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const progressPercentage = document.getElementById('progress-percentage');
-        
-        // Симуляция прогресса
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 20;
-            if (progress > 90) progress = 90;
-            
-            progressBar.style.width = progress + '%';
-            progressPercentage.textContent = Math.round(progress) + '%';
-            
-            if (progress < 30) {
-                progressText.textContent = 'Загрузка файла...';
-            } else if (progress < 70) {
-                progressText.textContent = 'Распознавание текста...';
-            } else {
-                progressText.textContent = 'Анализ данных...';
-            }
-        }, 1000);
-
-        // Проверка статуса обработки
-        const statusInterval = setInterval(() => {
-            fetch(`/api/upload/status/?session_id=${sessionId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'completed') {
-                        clearInterval(progressInterval);
-                        clearInterval(statusInterval);
-
-                        progressBar.style.width = '100%';
-                        progressPercentage.textContent = '100%';
-                        progressText.textContent = 'Готово!';
-
-                        setTimeout(() => {
-                            window.location.href = '/results/';
-                        }, 2000);
-                    } else if (data.status === 'error') {
-                        clearInterval(progressInterval);
-                        clearInterval(statusInterval);
-
-                        processingCard.style.display = 'none';
-                        showError(data.error_message || 'Ошибка обработки файла');
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка проверки статуса:', error);
-                    showError('Ошибка проверки статуса обработки');
-                });
-        }, 3000);
-    }
     
     // Drag & Drop улучшения
     const uploadArea = document.querySelector('.upload-area');

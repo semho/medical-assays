@@ -17,7 +17,7 @@ from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .file_processor import FileUploadHandler
-from .utils import get_client_ip, get_all_units_list
+from .utils import get_client_ip, get_all_units_list, parse_value_with_operator
 
 logger = logging.getLogger(__name__)
 
@@ -238,30 +238,68 @@ def analysis_detail(request, analysis_id):
                     param_key = key.replace("value_", "")
 
                     try:
-                        value = float(request.POST.get(f"value_{param_key}", 0))
+                        value_str = request.POST.get(f"value_{param_key}", "").strip()
+                        logger.info(f"Обработка {param_key}: '{value_str}'")
+                        # Парсим значение с оператором
+                        value, operator = parse_value_with_operator(value_str)
+
+                        if value is None:
+                            logger.warning(f"Не удалось распарсить значение: {value_str}")
+                            messages.warning(request, f"Ошибка в параметре {param_key}")
+                            continue
+
                         unit = request.POST.get(f"unit_{param_key}", "")
                         reference = request.POST.get(f"reference_{param_key}", "")
                         status = request.POST.get(f"status_{param_key}", "норма")
 
-                        updated_parsed_data[param_key] = {
+                        param_data = {
                             "value": value,
                             "unit": unit,
                             "reference": reference,
                             "status": status,
                         }
+
+                        # Добавляем оператор если есть
+                        if operator:
+                            param_data["operator"] = operator
+
+                        updated_parsed_data[param_key] = param_data
                     except (ValueError, TypeError) as e:
+                        logger.error(f"Ошибка парсинга {param_key}: {e}")
                         messages.warning(request, f"Ошибка в параметре {param_key}: {e}")
                         continue
+
 
             # Обновляем зашифрованные данные
             decrypted["parsed_data"] = updated_parsed_data
             decrypted["confirmed"] = True
             decrypted["edited_by_user"] = True
 
+            if "grouped_data" in decrypted:
+                new_grouped = {
+                    "blood_general": {},
+                    "blood_biochem": {},
+                    "hormones": {},
+                    "other": {},
+                }
+
+                for param_key, param_value in updated_parsed_data.items():
+                    param_type = PARAMETER_TYPE_MAP.get(param_key.lower())
+
+                    if param_type == "blood_general":
+                        new_grouped["blood_general"][param_key] = param_value
+                    elif param_type == "blood_biochem":
+                        new_grouped["blood_biochem"][param_key] = param_value
+                    elif param_type == "hormones":
+                        new_grouped["hormones"][param_key] = param_value
+                    else:
+                        new_grouped["other"][param_key] = param_value
+
+                decrypted["grouped_data"] = new_grouped
+
             medical_data.encrypt_and_save(decrypted)
             medical_data.is_confirmed = True
             medical_data.save()
-
             SecurityLog.objects.create(
                 user=request.user,
                 action="ANALYSIS_CONFIRMED",
@@ -307,23 +345,61 @@ def analysis_detail(request, analysis_id):
     for param_key, param_value in parsed_data.items():
         if isinstance(param_value, dict):
             value = param_value.get("value")
+            operator = param_value.get("operator", "")
             unit = param_value.get("unit", "")
             reference = param_value.get("reference", "")
             status = param_value.get("status", "норма")
         else:
             value = param_value
+            operator = ""
             unit = ""
             reference = ""
             status = "норма"
 
+        if value is None or value == "" or (isinstance(value, str) and value.strip() == ""):
+            continue
+
+        if operator:
+            display_value = f"{operator} {value}"
+        else:
+            # Оставляем как есть для обычных чисел
+            if isinstance(value, str):
+                display_value = value.replace(",", ".")
+            else:
+                display_value = value
+
         ru_name = PARAMETER_NAMES_RU.get(param_key, param_key.replace("_", " ").title())
 
-        parameters_list.append(
-            {"key": param_key, "name": ru_name, "value": value, "unit": unit, "reference": reference, "status": status}
-        )
+        parameters_list.append({
+            "key": param_key,
+            "name": ru_name,
+            "value": display_value,
+            "unit": unit,
+            "reference": reference,
+            "status": status
+        })
 
     # Сортируем по русскому названию
     parameters_list.sort(key=lambda x: x["name"])
+
+    # Определяем правильный тип на основе реально заполненных параметров
+    actual_type_counts = {"blood_general": 0, "blood_biochem": 0, "hormones": 0}
+    for param in parameters_list:
+        param_type = PARAMETER_TYPE_MAP.get(param["key"].lower())
+        if param_type in actual_type_counts:
+            actual_type_counts[param_type] += 1
+
+    # Находим тип с максимальным количеством параметров
+    max_count = max(actual_type_counts.values()) if actual_type_counts.values() else 0
+    if max_count > 0:
+        for type_name, count in actual_type_counts.items():
+            if count == max_count:
+                # Обновляем тип только если он отличается
+                if medical_data.analysis_type != type_name:
+                    logger.info(f"Корректировка типа: {medical_data.analysis_type} → {type_name}")
+                    medical_data.analysis_type = type_name
+                    medical_data.save(update_fields=['analysis_type'])
+                break
 
     # Логируем просмотр
     SecurityLog.objects.create(
@@ -572,7 +648,7 @@ def trends_data(request, analysis_type=None):
     Теперь с поддержкой групповых данных.
     """
     # Получаем все анализы пользователя
-    analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date")
+    analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date", "created_at")
 
     if analyses.count() < 1:
         return JsonResponse({"error": "Нет данных для построения графиков"}, status=400)
@@ -639,7 +715,11 @@ def trends_data(request, analysis_type=None):
                 reference = ""
 
             try:
-                value_float = float(value)
+                # Если есть оператор - используем только числовое значение для графика
+                if isinstance(param_data, dict) and param_data.get("operator"):
+                    value_float = float(value)
+                else:
+                    value_float = float(value)
             except (ValueError, TypeError):
                 continue
 
@@ -684,14 +764,14 @@ def session_wait(request, session_id):
     """Страница ожидания обработки с автоматическим редиректом"""
     session = get_object_or_404(AnalysisSession, id=session_id, user=request.user)
 
-    # Если обработка завершена - перенаправляем на подтверждение
-    if session.processing_status == Status.COMPLETED and hasattr(session, "medical_data") and session.medical_data:
-        return redirect("analysis_detail", analysis_id=session.medical_data.id)
-
-    # Если ошибка - показываем сообщение
-    if session.processing_status == Status.ERROR:
-        messages.error(request, f"Ошибка обработки: {session.error_message}")
-        return redirect("upload_file")
+    # # Если обработка завершена - перенаправляем на подтверждение
+    # if session.processing_status == Status.COMPLETED and hasattr(session, "medical_data") and session.medical_data:
+    #     return redirect("analysis_detail", analysis_id=session.medical_data.id)
+    #
+    # # Если ошибка - показываем сообщение
+    # if session.processing_status == Status.ERROR:
+    #     messages.error(request, f"Ошибка обработки: {session.error_message}")
+    #     return redirect("upload_file")
 
     context = {
         "session": session,
@@ -705,18 +785,41 @@ def check_session_status(request, session_id):
     """AJAX endpoint для проверки статуса сессии"""
     session = get_object_or_404(AnalysisSession, id=session_id, user=request.user)
 
-    response_data = {
-        "status": session.processing_status,
-        "analysis_type": session.analysis_type,
+    # примерные этапы обработки для расчета прогресса
+    stages = {
+        "uploading": {"progress": 10, "message": "загрузка файла..."},
+        "processing": {"progress": 30, "message": "обработка файла..."},
+        "ocr": {"progress": 50, "message": "распознавание текста..."},
+        "parsing": {"progress": 70, "message": "анализ данных..."},
+        "completed": {"progress": 100, "message": "готово!"},
+        "error": {"progress": 0, "message": "ошибка обработки"},
     }
 
-    # Если обработка завершена, возвращаем URL для редиректа
-    if session.processing_status == Status.COMPLETED:
-        if hasattr(session, "medical_data") and session.medical_data:
-            response_data["redirect_url"] = f"/results/{session.medical_data.id}/"
+    current_stage = stages.get(session.processing_status, {"progress": 30, "message": "обработка..."})
 
-    elif session.processing_status == Status.ERROR:
-        response_data["error_message"] = session.error_message
+    response_data = {
+        "status": session.processing_status,
+        "progress": current_stage["progress"],
+        "message": current_stage["message"],
+        "error_message": session.error_message if session.processing_status == "error" else None,
+    }
+
+    # response_data = {
+    #     "status": session.processing_status,
+    #     "analysis_type": session.analysis_type,
+    # }
+    #
+    # # Если обработка завершена, возвращаем URL для редиректа
+    # if session.processing_status == Status.COMPLETED:
+    #     if hasattr(session, "medical_data") and session.medical_data:
+    #         response_data["redirect_url"] = f"/results/{session.medical_data.id}/"
+    #
+    # elif session.processing_status == Status.ERROR:
+    #     response_data["error_message"] = session.error_message
+
+    if session.processing_status == Status.COMPLETED:
+        if hasattr(session, 'medical_data'):
+            response_data["analysis_id"] = session.medical_data.id
 
     return JsonResponse(response_data)
 
