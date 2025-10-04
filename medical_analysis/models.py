@@ -1,9 +1,11 @@
+import json
+
 from django.db import models
 from django.contrib.auth.models import User
 from cryptography.fernet import Fernet
 import base64
 
-from medical_analysis.enums import LanguageChoices, Status, AnalysisType
+from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType
 
 
 class UserProfile(models.Model):
@@ -63,6 +65,14 @@ class MedicalData(models.Model):
     analysis_date = models.DateField(help_text="Дата проведения анализа")
     analysis_type = models.CharField(max_length=20, choices=AnalysisType.choices)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_confirmed = models.BooleanField(default=False, help_text="Пользователь подтвердил правильность данных")
+    laboratory = models.CharField(
+        choices=LaboratoryType.choices,
+        max_length=50,
+        blank=True,
+        default=LaboratoryType.UNKNOWN,
+        help_text="Лаборатория-источник анализа",
+    )
 
     class Meta:
         ordering = ["-analysis_date", "-created_at"]
@@ -72,12 +82,13 @@ class MedicalData(models.Model):
     def __str__(self):
         return f"Анализ {self.analysis_type} - {self.user.username} - {self.analysis_date}"
 
-    def encrypt_data(self, data_dict):
+    def encrypt_and_save(self, data_dict):
         """Шифрование данных перед сохранением"""
         cipher = self.user.profile.get_fernet_cipher()
-        json_data = str(data_dict).encode()
+        json_data = json.dumps(data_dict, ensure_ascii=False).encode()
         encrypted_data = cipher.encrypt(json_data)
         self.encrypted_results = base64.b64encode(encrypted_data).decode()
+        self.save()
 
     def decrypt_data(self):
         """Расшифровка данных"""
@@ -85,8 +96,9 @@ class MedicalData(models.Model):
             cipher = self.user.profile.get_fernet_cipher()
             encrypted_bytes = base64.b64decode(self.encrypted_results.encode())
             decrypted_data = cipher.decrypt(encrypted_bytes)
-            return eval(decrypted_data.decode())  # В продакшене использовать json.loads
-        except Exception:
+            return json.loads(decrypted_data.decode())
+        except Exception as e:
+            print(f"Ошибка расшифровки: {e}")
             return None
 
 

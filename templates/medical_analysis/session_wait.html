@@ -1,0 +1,146 @@
+{% extends 'medical_analysis/base.html' %}
+{% load static %}
+
+{% block title %}Обработка анализа{% endblock %}
+
+{% block extra_css %}
+<style>
+    .processing-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .processing-card {
+        max-width: 600px;
+        width: 100%;
+    }
+    .spinner-large {
+        width: 4rem;
+        height: 4rem;
+    }
+    .progress-text {
+        font-size: 1.1rem;
+        margin-top: 1rem;
+    }
+    .file-info {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container processing-container">
+    <div class="processing-card">
+        <div class="card shadow-lg">
+            <div class="card-body text-center p-5">
+                <div id="processing-view">
+                    <div class="spinner-border spinner-large text-primary mb-4" role="status">
+                        <span class="visually-hidden">Обработка...</span>
+                    </div>
+                    
+                    <h3 class="mb-3">Обрабатываем ваш анализ</h3>
+                    <p class="text-muted progress-text">
+                        Это может занять от 10 до 30 секунд
+                    </p>
+                    
+                    <div class="file-info mt-4">
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-file-alt me-2"></i>Файл
+                        </h6>
+                        <p class="mb-0"><strong>{{ session.original_filename }}</strong></p>
+                        <small class="text-muted">
+                            Загружен: {{ session.upload_timestamp|date:"d.m.Y H:i" }}
+                        </small>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                        <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                        <div class="spinner-grow spinner-grow-sm text-primary" role="status"></div>
+                    </div>
+                </div>
+
+                <div id="error-view" style="display: none;">
+                    <i class="fas fa-exclamation-triangle text-danger fa-4x mb-4"></i>
+                    <h3 class="text-danger mb-3">Ошибка обработки</h3>
+                    <p class="text-muted" id="error-message"></p>
+                    <a href="{% url 'upload_file' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-upload me-2"></i>Загрузить другой файл
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt me-1"></i>
+                Ваши данные защищены end-to-end шифрованием
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+// Проверка статуса каждые 2 секунды
+const sessionId = {{ session.id }};
+let checkInterval;
+let checksCount = 0;
+const maxChecks = 60; // Максимум 2 минуты ожидания
+
+function checkStatus() {
+    checksCount++;
+    
+    // Защита от бесконечного опроса
+    if (checksCount > maxChecks) {
+        clearInterval(checkInterval);
+        showError('Превышено время ожидания обработки. Попробуйте загрузить файл снова.');
+        return;
+    }
+    
+    fetch(`/sessions/${sessionId}/check-status/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Status:', data.status);
+            
+            if (data.status === 'completed') {
+                clearInterval(checkInterval);
+                // Редирект на страницу подтверждения
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                }
+            } else if (data.status === 'error') {
+                clearInterval(checkInterval);
+                showError(data.error_message || 'Произошла ошибка при обработке файла');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+        });
+}
+
+function showError(message) {
+    document.getElementById('processing-view').style.display = 'none';
+    document.getElementById('error-view').style.display = 'block';
+    document.getElementById('error-message').textContent = message;
+}
+
+// Начинаем проверку статуса
+document.addEventListener('DOMContentLoaded', function() {
+    // Первая проверка сразу
+    checkStatus();
+    // Затем каждые 2 секунды
+    checkInterval = setInterval(checkStatus, 2000);
+});
+
+// Очистка при уходе со страницы
+window.addEventListener('beforeunload', function() {
+    if (checkInterval) {
+        clearInterval(checkInterval);
+    }
+});
+</script>
+{% endblock %}

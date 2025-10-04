@@ -119,11 +119,9 @@ def system_health_check():
 def send_processing_notification(user_id, session_id, status):
     """Отправка уведомления о статусе обработки"""
     try:
-        from django.contrib.auth.models import User
         from channels.layers import get_channel_layer
         from asgiref.sync import async_to_sync
 
-        user = User.objects.get(id=user_id)
         session = AnalysisSession.objects.get(id=session_id)
 
         # Отправляем WebSocket уведомление

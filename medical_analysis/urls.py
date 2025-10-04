@@ -10,8 +10,12 @@ urlpatterns = [
     # Основной функционал
     path("dashboard/", web_views.dashboard, name="dashboard"),
     path("upload/", web_views.upload_file, name="upload_file"),
+    # НОВОЕ: Страница ожидания обработки
+    path("sessions/<int:session_id>/wait/", web_views.session_wait, name="session_wait"),
+    path("sessions/<int:session_id>/check-status/", web_views.check_session_status, name="check_session_status"),
     path("sessions/", web_views.analysis_sessions, name="analysis_sessions"),
     path("sessions/<int:session_id>/status/", web_views.session_status, name="session_status"),
+    # Результаты и подтверждение
     path("results/", web_views.analysis_results, name="analysis_results"),
     path("results/<int:analysis_id>/", web_views.analysis_detail, name="analysis_detail"),
     path("compare/", web_views.compare_analyses, name="compare_analyses"),

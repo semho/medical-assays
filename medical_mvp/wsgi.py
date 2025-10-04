@@ -1,5 +1,4 @@
-"""
-WSGI config for medical_mvp project.
+"""WSGI config for medical_mvp project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
