@@ -64,9 +64,9 @@ class MedicalDataAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "encrypted_results")
 
     fieldsets = (
-        ("Основная информация", {"fields": ("user", "session", "analysis_type", "analysis_date")}),
+        ("Основная информация", {"fields": ("user", "session", "analysis_type", "analysis_date", "laboratory")}),
         ("Зашифрованные данные", {"fields": ("encrypted_results",), "classes": ("collapse",)}),
-        ("Дополнительно", {"fields": ("created_at",)}),
+        ("Дополнительно", {"fields": ("created_at","is_confirmed")}),
     )
 
     def has_structured_data(self, obj):
