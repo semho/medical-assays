@@ -9,6 +9,7 @@ from django.conf import settings
 from medical_analysis.constants import GPT_PARSER_ALIASES
 from medical_analysis.constants.prompts import BLOOD_GENERAL_PROMPT, BLOOD_BIOCHEM_PROMPT, HORMONES_PROMPT
 from medical_analysis.enums import AnalysisType
+from medical_analysis.models import ParserSettings
 
 logger = logging.getLogger(__name__)
 
@@ -16,17 +17,42 @@ logger = logging.getLogger(__name__)
 class GPTMedicalParser:
     """Парсер медицинских анализов через GPT с поддержкой разных лабораторий"""
 
-    def __init__(self):
+    def __init__(self, force_settings=None):
+        """
+            Инициализация парсера с настройками из БД
+
+            Args:
+                force_settings: Принудительные настройки (для тестов)
+        """
+
+        # Получаем настройки
+        if force_settings:
+            settings_obj = force_settings
+        else:
+            settings_obj = ParserSettings.get_settings()
+
+        self.settings = settings_obj
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
-        self.max_input_tokens = settings.GPT_MAX_INPUT_TOKENS
-        self.max_output_tokens = settings.GPT_MAX_OUTPUT_TOKENS
-        self.temperature = settings.GPT_TEMPERATURE
+        # Параметры из БД
+        self.model = self.settings.gpt_model
+        self.max_input_tokens = self.settings.max_input_tokens
+        self.max_output_tokens = self.settings.max_output_tokens
+        self.temperature = self.settings.temperature
 
         try:
             self.encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
             self.encoding = tiktoken.get_encoding("cl100k_base")
+
+        logger.info(
+            f"GPT Parser initialized: model={self.model}, "
+            f"enabled={self.settings.gpt_enabled}, "
+            f"fallback={self.settings.fallback_enabled}"
+        )
+
+    def is_enabled(self) -> bool:
+        """Проверка включён ли GPT парсер"""
+        return self.settings.gpt_enabled
 
     def count_tokens(self, text: str) -> int:
         """Подсчет токенов в тексте"""
@@ -53,6 +79,11 @@ class GPTMedicalParser:
             analysis_type: Тип анализа
             laboratory: Название лаборатории (для адаптации промпта)
         """
+
+        # Проверяем включён ли GPT
+        if not self.is_enabled():
+            logger.info("GPT parser disabled in settings")
+            return {}
 
         # Предобработка текста
         text = preprocess_analysis_text(text)
@@ -168,10 +199,20 @@ class GPTMedicalParser:
         """Оценка стоимости запроса"""
         prices = {
             "gpt-4o-mini": {"input": 0.15, "output": 0.60},  # $0.15/$0.60 per 1M tokens
+            "gpt-4o": {"input": 2.50, "output": 10.00},
         }
 
         model_prices = prices.get(self.model, prices["gpt-4o-mini"])
         cost = (input_tokens / 1_000_000 * model_prices["input"]) + (output_tokens / 1_000_000 * model_prices["output"])
+
+        # check if cost logging is enabled
+        if self.settings.log_gpt_costs:
+            if cost > float(self.settings.max_cost_per_request):
+                logger.warning(
+                    f"gpt request cost ${cost:.4f} exceeds threshold "
+                    f"${self.settings.max_cost_per_request}"
+                )
+
         return cost
 
 

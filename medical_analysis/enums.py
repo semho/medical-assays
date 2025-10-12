@@ -32,3 +32,7 @@ class LaboratoryType(models.TextChoices):
     CMD = "cmd", "ЦМД"
     CITILAB = "citilab", "Ситилаб"
     UNKNOWN = "unknown", "Неизвестно"
+
+class GptModel(models.TextChoices):
+    GPT_4O_MINI = "gpt-4o-mini", "GPT-4o Mini (быстрый, дешёвый)"
+    GPT_4O = "gpt-4o", "GPT-4o (медленный, дорогой, точный)"

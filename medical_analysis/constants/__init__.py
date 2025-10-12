@@ -15,6 +15,7 @@ from .parameters import (
     get_parameter_info,
     get_reference_range,
     validate_value,
+    get_display_name
 )
 
 from .parsing import (
@@ -50,6 +51,7 @@ __all__ = [
     "get_parameter_info",
     "get_reference_range",
     "validate_value",
+    "get_display_name",
     # Парсинг
     "ANALYSIS_KEYWORDS",
     "UNIT_PATTERNS",

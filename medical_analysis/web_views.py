@@ -12,7 +12,7 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from .constants import PARAMETER_NAMES_RU, PARAMETER_TYPE_MAP
+from .constants import PARAMETER_NAMES_RU, PARAMETER_TYPE_MAP, get_display_name
 from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
@@ -368,11 +368,10 @@ def analysis_detail(request, analysis_id):
             else:
                 display_value = value
 
-        ru_name = PARAMETER_NAMES_RU.get(param_key, param_key.replace("_", " ").title())
-
+        display_name = get_display_name(param_key, unit)
         parameters_list.append({
             "key": param_key,
-            "name": ru_name,
+            "name": display_name,
             "value": display_value,
             "unit": unit,
             "reference": reference,
@@ -540,8 +539,8 @@ def calculate_differences(data1, data2):
             unit2 = ""
 
         # Получаем русское название параметра
-        param_name = PARAMETER_NAMES_RU.get(key, key.replace("_", " ").title())
-
+        # param_name = PARAMETER_NAMES_RU.get(key, key.replace("_", " ").title())
+        display_name = get_display_name(key, unit1 or unit2)
         if val1 is not None and val2 is not None:
             try:
                 val1_float = float(val1)
@@ -551,7 +550,7 @@ def calculate_differences(data1, data2):
                 percent_change = (diff / val1_float) * 100 if val1_float != 0 else 0
 
                 differences[key] = {
-                    "parameter_name": param_name,
+                    "parameter_name": display_name,
                     "value1": val1,
                     "value2": val2,
                     "unit1": unit1,
@@ -562,7 +561,7 @@ def calculate_differences(data1, data2):
                 }
             except (ValueError, TypeError):
                 differences[key] = {
-                    "parameter_name": param_name,
+                    "parameter_name": display_name,
                     "value1": val1,
                     "value2": val2,
                     "unit1": unit1,
@@ -573,7 +572,7 @@ def calculate_differences(data1, data2):
                 }
         else:
             differences[key] = {
-                "parameter_name": param_name,
+                "parameter_name": display_name,
                 "value1": val1 if val1 is not None else "—",
                 "value2": val2 if val2 is not None else "—",
                 "unit1": unit1,
@@ -737,9 +736,10 @@ def trends_data(request, analysis_type=None):
 
             # Русское название
             if not parameters_data[param_key]["name"]:
-                parameters_data[param_key]["name"] = PARAMETER_NAMES_RU.get(
-                    param_key, param_key.replace("_", " ").title()
-                )
+                parameters_data[param_key]["name"] = get_display_name(param_key, unit)
+                # parameters_data[param_key]["name"] = PARAMETER_NAMES_RU.get(
+                #     param_key, param_key.replace("_", " ").title()
+                # )
 
             # Парсим референсные значения
             if reference:

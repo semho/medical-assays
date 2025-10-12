@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog
+from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog, ParserSettings
 
 
 @admin.register(UserProfile)
@@ -100,3 +100,41 @@ class SecurityLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+@admin.register(ParserSettings)
+class ParserSettingsAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ("🤖 GPT настройки", {
+            "fields": ("gpt_enabled", "gpt_model")
+        }),
+        ("🔄 Fallback", {
+            "fields": ("fallback_enabled",),
+            "description": "Что делать если GPT недоступен"
+        }),
+        ("📊 Мониторинг", {
+            "fields": ("log_gpt_costs", "max_cost_per_request"),
+            "classes": ("collapse",)
+        }),
+        ("⚙️ Технические параметры", {
+            "fields": ("max_input_tokens", "max_output_tokens", "temperature"),
+            "classes": ("collapse",)
+        }),
+        ("ℹ️ Информация", {
+            "fields": ("updated_at", "updated_by"),
+            "classes": ("collapse",)
+        }),
+    )
+
+    readonly_fields = ("updated_at", "updated_by")
+
+    def has_add_permission(self, request):
+        # Запретить создание новых записей (singleton)
+        return not ParserSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # Запретить удаление
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
