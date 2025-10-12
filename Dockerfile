@@ -16,6 +16,10 @@ COPY .python-version pyproject.toml uv.lock ./
 # Устанавливаем пакеты БЕЗ создания .venv
 RUN uv pip install --system -r pyproject.toml
 
+
+# download EasyOCR models during build
+RUN python -c "import easyocr; reader = easyocr.Reader(['ru', 'en'], gpu=False, download_enabled=True); print('EasyOCR models downloaded')"
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 

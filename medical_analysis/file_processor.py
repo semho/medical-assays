@@ -3,7 +3,6 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 import pytesseract
-from PIL import Image
 import fitz  # PyMuPDF
 import re
 from django.conf import settings
@@ -72,6 +71,10 @@ class OCRProcessor:
     """Процессор для распознавания текста из медицинских документов"""
 
     def __init__(self):
+        from medical_analysis.ocr_service import get_ocr_service
+        self.ocr_service = get_ocr_service()
+
+        # tesseract для PDF fallback
         if hasattr(settings, "TESSERACT_CMD"):
             pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
 
@@ -109,22 +112,19 @@ class OCRProcessor:
             raise
 
     def extract_text_from_image(self, file_path: str) -> str:
-        """Извлечение текста из изображения"""
+        """извлечение текста из изображения используя EasyOCR"""
         try:
-            image = Image.open(file_path)
-
-            # Конфигурация для медицинских документов
-            custom_config = r"--oem 3 --psm 6 -l rus+eng"
-
-            text = pytesseract.image_to_string(image, config=custom_config)
+            logger.info(f"OCR изображения: {file_path}")
+            text = self.ocr_service.extract_text_from_file(file_path)
+            logger.info(f"извлечено {len(text)} символов")
             return text
 
         except Exception as e:
-            logger.error(f"Ошибка OCR изображения: {e}")
+            logger.error(f"ошибка OCR изображения: {e}")
             raise
 
     def process_file(self, file_path: str) -> str:
-        """Основной метод обработки файла"""
+        """основной метод обработки файла"""
         file_extension = Path(file_path).suffix.lower()
 
         if file_extension == ".pdf":
@@ -132,7 +132,7 @@ class OCRProcessor:
         elif file_extension in [".jpg", ".jpeg", ".png", ".tiff"]:
             return self.extract_text_from_image(file_path)
         else:
-            raise ValueError(f"Неподдерживаемый тип файла: {file_extension}")
+            raise ValueError(f"неподдерживаемый тип файла: {file_extension}")
 
 
 class MedicalDataParser:
