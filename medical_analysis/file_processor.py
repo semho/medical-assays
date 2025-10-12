@@ -771,36 +771,66 @@ class GroupedAnalysisParser:
 
     def _parse_with_gpt(self, text: str, grouped_results: dict) -> dict:
         """Парсинг с использованием GPT для каждого типа"""
-        logger.info("Используем GPT для парсинга")
 
+        if not self.gpt_parser:
+            logger.info("GPT parser not initialized")
+            return self._parse_with_regex(text, grouped_results)
+
+        # Проверяем включён ли GPT
+        if not self.gpt_parser.is_enabled():
+            logger.info("GPT parsing disabled, using regex fallback")
+            grouped_results["_metadata"]["parsing_method"] = "regex (gpt_disabled)"
+            return self._parse_with_regex(text, grouped_results)
+
+        logger.info("Используем GPT для парсинга")
         all_parameters = {}
 
-        # Пробуем каждый промпт
-        for analysis_type in [AnalysisType.BLOOD_GENERAL, AnalysisType.BLOOD_BIOCHEM, AnalysisType.HORMONES]:
-            try:
-                logger.info(f"GPT парсинг: {analysis_type}")
-                gpt_result = self.gpt_parser.parse_analysis(text, analysis_type, laboratory=self.laboratory)
+        try:
+            # Пробуем каждый промпт
+            for analysis_type in [AnalysisType.BLOOD_GENERAL, AnalysisType.BLOOD_BIOCHEM, AnalysisType.HORMONES]:
+                try:
+                    logger.info(f"GPT парсинг: {analysis_type}")
+                    gpt_result = self.gpt_parser.parse_analysis(text, analysis_type, laboratory=self.laboratory)
 
-                if gpt_result and gpt_result.get("parameters"):
-                    formatted = format_gpt_result(gpt_result)
-                    all_parameters.update(formatted)
-                    logger.info(f"  + {len(formatted)} параметров")
+                    if gpt_result and gpt_result.get("parameters"):
+                        formatted = format_gpt_result(gpt_result)
+                        all_parameters.update(formatted)
+                        logger.info(f"  + {len(formatted)} параметров")
 
-            except Exception as e:
-                logger.warning(f"Ошибка GPT парсинга {analysis_type}: {e}")
-                continue
+                except Exception as e:
+                    logger.warning(f"Ошибка GPT парсинга {analysis_type}: {e}")
+                    # check fallback setting
+                    if self.gpt_parser.settings.fallback_enabled:
+                        logger.info("falling back to regex due to error")
+                        return self._parse_with_regex(text, grouped_results)
+                    else:
+                        logger.warning("fallback disabled, continuing with other analysis types")
+                        continue
 
-        # Если GPT что-то нашёл
-        if all_parameters:
-            grouped_results["_metadata"]["parsing_method"] = "gpt"
-            # Параметры будут классифицированы позже
-            grouped_results["_raw_parameters"] = all_parameters
-        else:
-            # Фолбек на regex
-            logger.info("GPT не вернул результатов, используем regex")
-            grouped_results = self._parse_with_regex(text, grouped_results)
+            # Если GPT что-то нашёл
+            if all_parameters:
+                grouped_results["_metadata"]["parsing_method"] = "gpt"
+                # Параметры будут классифицированы позже
+                grouped_results["_raw_parameters"] = all_parameters
+            else:
+                # fallback to regex if enabled
+                if self.gpt_parser.settings.fallback_enabled:
+                    logger.info("gpt returned no results, using regex")
+                    grouped_results = self._parse_with_regex(text, grouped_results)
+                else:
+                    logger.warning("gpt returned no results and fallback disabled")
 
-        return grouped_results
+            return grouped_results
+        except Exception as e:
+            logger.error(f"GPT parsing error: {e}")
+
+            # Проверяем fallback
+            if self.gpt_parser.settings.fallback_enabled:
+                logger.info("Falling back to regex due to error")
+                return self._parse_with_regex(text, grouped_results)
+            else:
+                logger.warning("Fallback disabled, returning empty results")
+                return grouped_results
 
     def _parse_with_regex(self, text: str, grouped_results: dict) -> dict:
         """Фолбек на regex парсинг"""

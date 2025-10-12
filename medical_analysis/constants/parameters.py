@@ -107,7 +107,8 @@ PARAMETERS = {
     },
     # Лейкоформула
     "neutrophils_percentage": {
-        "names_ru": ["Нейтрофилы %"],
+        "names_ru": ["Нейтрофилы"],
+        "display_suffix": "%",
         "aliases": ["neutrophils", "neutrophils_percentage", "neutrophils_percent", "ne_percent"],
         "type": "blood_general",
         "units": ["%"],
@@ -116,7 +117,8 @@ PARAMETERS = {
         "keywords": ["нейтрофилы", "neutrophils", "ne"],
     },
     "lymphocytes_percentage": {
-        "names_ru": ["Лимфоциты %"],
+        "names_ru": ["Лимфоциты"],
+        "display_suffix": "%",
         "aliases": ["lymphocytes", "lymphocytes_percentage", "lymphocytes_percent", "lymf_percent"],
         "type": "blood_general",
         "units": ["%"],
@@ -125,7 +127,8 @@ PARAMETERS = {
         "keywords": ["лимфоциты", "lymphocytes", "lymf"],
     },
     "monocytes_percentage": {
-        "names_ru": ["Моноциты %"],
+        "names_ru": ["Моноциты"],
+        "display_suffix": "%",
         "aliases": ["monocytes", "monocytes_percentage", "monocytes_percent", "mon_percent"],
         "type": "blood_general",
         "units": ["%"],
@@ -134,7 +137,8 @@ PARAMETERS = {
         "keywords": ["моноциты", "monocytes", "mon"],
     },
     "eosinophils_percentage": {
-        "names_ru": ["Эозинофилы %"],
+        "names_ru": ["Эозинофилы"],
+        "display_suffix": "%",
         "aliases": ["eosinophils", "eosinophils_percentage", "eosinophils_percent", "eo_percent"],
         "type": "blood_general",
         "units": ["%"],
@@ -143,7 +147,8 @@ PARAMETERS = {
         "keywords": ["эозинофилы", "eosinophils", "eo"],
     },
     "basophils_percentage": {
-        "names_ru": ["Базофилы %"],
+        "names_ru": ["Базофилы"],
+        "display_suffix": "%",
         "aliases": ["basophils", "basophils_percentage", "basophils_percent", "ba_percent"],
         "type": "blood_general",
         "units": ["%"],
@@ -460,9 +465,16 @@ PARAMETERS = {
 # Русские названия для всех алиасов
 PARAMETER_NAMES_RU = {}
 for param_key, param in PARAMETERS.items():
-    ru_name = param["names_ru"][0]
+    base_name = param["names_ru"][0]
     for alias in param["aliases"]:
-        PARAMETER_NAMES_RU[alias.lower()] = ru_name
+        PARAMETER_NAMES_RU[alias.lower()] = base_name
+
+# Словарь с display_suffix
+PARAMETER_DISPLAY_SUFFIXES = {}
+for param_key, param in PARAMETERS.items():
+    if "display_suffix" in param:
+        for alias in param["aliases"]:
+            PARAMETER_DISPLAY_SUFFIXES[alias.lower()] = param["display_suffix"]
 
 # Маппинг типов
 PARAMETER_TYPE_MAP = {}
@@ -580,3 +592,63 @@ def validate_value(params_key: str, value: float) -> bool:
         return min_val <= value <= max_val
 
     return True  # Если нет диапазона, считаем валидным
+
+def get_display_name(param_key: str, unit: str) -> str:
+    """
+    get display name for parameter considering units
+
+    args:
+        param_key: parameter key (can be alias or canonical key)
+        unit: current unit of measurement
+
+    returns:
+        display name
+
+    examples:
+        >>> get_display_name("basophils_percentage", "%")
+        "Базофилы %"
+        >>> get_display_name("basophils", "×10⁹/л")
+        "Базофилы абс."
+        >>> get_display_name("hemoglobin", "г/л")
+        "Гемоглобин"
+    """
+    param_key_lower = param_key.lower()
+
+    # find canonical key
+    canonical_key = None
+    param = None
+
+    # first check if param_key is already canonical
+    if param_key in PARAMETERS:
+        canonical_key = param_key
+        param = PARAMETERS[param_key]
+    else:
+        # search through aliases
+        for key, p in PARAMETERS.items():
+            if param_key_lower in [a.lower() for a in p["aliases"]]:
+                canonical_key = key
+                param = p
+                break
+
+    # if parameter not found - return formatted param_key
+    if not param:
+        return PARAMETER_NAMES_RU.get(param_key_lower, param_key.replace("_", " ").title())
+
+    base_name = param["names_ru"][0]
+    display_suffix = param.get("display_suffix", "")
+
+    # if there is suffix AND unit matches
+    if display_suffix and unit == display_suffix:
+        return f"{base_name} {display_suffix}"
+
+    # for absolute leukocyte values
+    if canonical_key.endswith("_absolute"):
+        return base_name
+
+    # if this is percentage parameter but units are absolute
+    if canonical_key.endswith("_percentage") and unit != "%":
+        # change to absolute name
+        base_name_clean = base_name.replace(" %", "")
+        return f"{base_name_clean} абс."
+
+    return base_name

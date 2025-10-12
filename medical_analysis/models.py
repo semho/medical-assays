@@ -1,12 +1,13 @@
 import json
+import logging
 
 from django.db import models
 from django.contrib.auth.models import User
 from cryptography.fernet import Fernet
 import base64
 
-from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType
-
+from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType, GptModel
+logger = logging.getLogger(__name__)
 
 class UserProfile(models.Model):
     """Профиль пользователя с ключом шифрования"""
@@ -116,3 +117,89 @@ class SecurityLog(models.Model):
 
     def __str__(self):
         return f"{self.action} - {self.timestamp}"
+
+class ParserSettings(models.Model):
+    """Настройки парсера медицинских анализов (Singleton)"""
+
+    # GPT настройки
+    gpt_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Использовать GPT",
+        help_text="Включить/выключить парсинг через GPT"
+    )
+
+    gpt_model = models.CharField(
+        max_length=50,
+        default=GptModel.GPT_4O_MINI,
+        choices=GptModel.choices,
+        verbose_name="Модель GPT"
+    )
+
+    # Fallback настройки
+    fallback_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Использовать fallback",
+        help_text="Переключаться на regex при недоступности GPT"
+    )
+
+    # Мониторинг
+    log_gpt_costs = models.BooleanField(
+        default=True,
+        verbose_name="Логировать стоимость",
+        help_text="Записывать стоимость GPT-запросов"
+    )
+
+    max_cost_per_request = models.DecimalField(
+        max_digits=6,
+        decimal_places=4,
+        default=0.05,
+        verbose_name="Макс. стоимость запроса ($)",
+        help_text="Предупреждение при превышении"
+    )
+
+    # Технические параметры
+    max_input_tokens = models.IntegerField(
+        default=8000,
+        verbose_name="Макс. входных токенов"
+    )
+
+    max_output_tokens = models.IntegerField(
+        default=2000,
+        verbose_name="Макс. выходных токенов"
+    )
+
+    temperature = models.FloatField(
+        default=0.1,
+        verbose_name="Temperature",
+        help_text="0.0 - детерминированно, 1.0 - креативно"
+    )
+
+    # Метаданные
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Обновлено"
+    )
+
+    class Meta:
+        verbose_name = "Настройки парсера"
+        verbose_name_plural = "Настройки парсера"
+
+    def __str__(self):
+        return f"Настройки парсера (GPT: {'вкл' if self.gpt_enabled else 'выкл'})"
+
+    def save(self, *args, **kwargs):
+        # Singleton pattern - только одна запись
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        """Получить текущие настройки (создать если не существует)"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        if created:
+            logger.info("Created default parser settings")
+        return obj
