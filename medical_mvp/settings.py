@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "medical_analysis",
+    "medical_analysis.apps.MedicalAnalysisConfig",
     "rest_framework",
     # "corsheaders",
     "celery",
@@ -157,7 +157,7 @@ FILE_RETENTION_SECONDS = 60  # Удаление через 60 секунд
 MAX_PROCESSING_TIME = 300  # 5 минут максимум на обработку
 
 # OCR Settings
-TESSERACT_CMD = "/usr/bin/tesseract"  # Путь к tesseract
+TESSERACT_CMD = config("TESSERACT_CMD", default="/usr/bin/tesseract")  # Путь к tesseract
 OCR_LANGUAGES = ["rus", "eng"]
 
 # Default primary key field type
