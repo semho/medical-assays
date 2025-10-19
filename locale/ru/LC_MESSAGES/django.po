@@ -742,3 +742,69 @@ msgid "Найдено параметров"
 msgstr "Найдено параметров"
 msgid "Обработано"
 msgstr "Обработано"
+
+msgid "Upgrade Subscription"
+msgstr "Обновить подписку"
+
+msgid "Upgrade to Premium"
+msgstr "Перейти на Премиум"
+
+msgid "You have unlimited uploads with Premium"
+msgstr "С Премиум у вас неограниченное количество загрузок"
+
+msgid "Subscribe Now"
+msgstr "Подписаться сейчас"
+
+msgid "Subscribe Now - $4.99/month"
+msgstr "Подписаться сейчас — 4,99 $/мес"
+
+msgid "Premium Features"
+msgstr "Премиум-возможности"
+
+msgid "Unlimited uploads"
+msgstr "Неограниченные загрузки"
+
+msgid "Advanced trends"
+msgstr "Расширенная аналитика"
+
+msgid "Priority support"
+msgstr "Приоритетная поддержка"
+
+msgid "Trial Limits"
+msgstr "Ограничения пробного периода"
+
+msgid "Only 5 uploads"
+msgstr "Только 5 загрузок"
+
+msgid "Limited features"
+msgstr "Ограниченные возможности"
+
+msgid "You have %(counter)s upload left in your trial."
+msgid_plural "You have %(counter)s uploads left in your trial."
+msgstr[0] "У вас осталась %(counter)s загрузка в пробном периоде."
+msgstr[1] "У вас осталось %(counter)s загрузки в пробном периоде."
+msgstr[2] "У вас осталось %(counter)s загрузок в пробном периоде."
+
+msgid "Вы исчерпали лимит бесплатных загрузок. Оформите подписку для продолжения."
+msgstr "Вы исчерпали лимит бесплатных загрузок. Оформите подписку для продолжения."
+
+msgid "Subscription Contact"
+msgstr "Контакт по подписке"
+
+msgid "Service Under Development"
+msgstr "Служба в разработке"
+
+msgid "The payment system is currently under development. To upgrade to Premium, please contact the administrator."
+msgstr "Система оплаты находится в разработке. Чтобы перейти на Премиум, пожалуйста, свяжитесь с администратором."
+
+msgid "Email Admin"
+msgstr "Написать администратору"
+
+msgid "Contact via Telegram Bot"
+msgstr "Связаться через Telegram-бота"
+
+msgid "We appreciate your patience and look forward to serving you soon!"
+msgstr "Благодарим за терпение и с нетерпением ждём возможности скоро вас обслужить!"
+
+msgid "Пожалуйста, пройдите проверку CAPTCHA"
+msgstr "Пожалуйста, пройдите проверку CAPTCHA"

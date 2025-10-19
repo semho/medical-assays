@@ -1,7 +1,19 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog, ParserSettings
+from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog, ParserSettings, Subscription
 
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("user", "subscription_type", "upload_limit", "used_uploads", "created_at" )
+    list_filter = ("subscription_type", "created_at")
+    readonly_fields = ("upload_limit", "used_uploads", "created_at")
+
+    fieldsets = (
+        ("Основная информация", {"fields": ("user", "subscription_type")}),
+        ("Лимиты", {"fields": ("upload_limit", "used_uploads"), "classes": ("collapse",)}),
+        ("Временные метки", {"fields": ("created_at",), "classes": ("collapse",)}),
+    )
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):

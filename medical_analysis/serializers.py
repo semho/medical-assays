@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog
+
+from .enums import SubcriptionType
+from .models import UserProfile, AnalysisSession, MedicalData, SecurityLog, Subscription
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -198,6 +200,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 first_name=validated_data.get("first_name", ""),
                 last_name=validated_data.get("last_name", ""),
             )
+            Subscription.objects.create(user=user, subscription_type=SubcriptionType.TRIAL)
 
             # Создаем профиль
             UserProfile.objects.create(user=user, language_preference=language_preference)

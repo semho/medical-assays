@@ -1,6 +1,9 @@
+import logging
 import re
 from typing import Tuple, Optional
 
+import requests
+logger = logging.getLogger(__name__)
 from medical_analysis.constants import UNITS_DICT
 
 
@@ -44,3 +47,20 @@ def parse_value_with_operator(value_str: str) -> Tuple[Optional[float], Optional
     value = float(match.group(2).replace(',', '.'))
 
     return value, operator
+
+def verify_recaptcha(response_token, secret_key):
+    """Verify Google reCAPTCHA response"""
+    if not response_token:
+        return False
+    url = 'https://www.google.com/recaptcha/api/siteverify'
+    data = {
+        'secret': secret_key,
+        'response': response_token
+    }
+    try:
+        resp = requests.post(url, data=data)
+        result = resp.json()
+        return result.get('success', False)
+    except Exception as e:
+        logger.error(f"reCAPTCHA verification error: {e}")
+        return False

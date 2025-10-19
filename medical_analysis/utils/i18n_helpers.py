@@ -66,6 +66,22 @@ def get_analysis_type_display(analysis_type: str) -> str:
     }
     return type_map.get(analysis_type, analysis_type)
 
+def get_subscription_type_display(subscription_type: str) -> str:
+    """
+    get translated display name for subscription type
+
+    args:
+        subscription_type: subscription type code
+
+    returns:
+        translated subscription type name
+    """
+    type_map = {
+        "trial": _("триал"),
+        "paid": _("оплачен"),
+    }
+    return type_map.get(subscription_type, type_map)
+
 
 def get_status_display(status: str) -> str:
     """

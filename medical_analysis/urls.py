@@ -10,7 +10,7 @@ urlpatterns = [
     # Основной функционал
     path("dashboard/", web_views.dashboard, name="dashboard"),
     path("upload/", web_views.upload_file, name="upload_file"),
-    # НОВОЕ: Страница ожидания обработки
+    # Страница ожидания обработки
     path("sessions/<int:session_id>/wait/", web_views.session_wait, name="session_wait"),
     path("sessions/<int:session_id>/check-status/", web_views.check_session_status, name="check_session_status"),
     path("sessions/", web_views.analysis_sessions, name="analysis_sessions"),
@@ -24,6 +24,8 @@ urlpatterns = [
     path("export/", web_views.export_data, name="export_data"),
     # Настройки
     path("profile/", web_views.profile_settings, name="profile_settings"),
+    path("subscription/upgrade/", web_views.subscription_upgrade, name="subscription_upgrade"),
+    path("subscription/contact/", web_views.subscription_contact, name="subscription_contact"),
     path("partials/recent-sessions/", web_views.recent_sessions_partial, name="recent_sessions_partial"),
     # Изменение анализов по времени
     path("trends/", web_views.analysis_trends, name="analysis_trends"),

@@ -46,7 +46,11 @@
                                    placeholder="{% trans 'Введите' %} {% trans 'password' %}">
                         </div>
                     </div>
-                    
+
+                    <div class="mb-3">
+                        <div class="g-recaptcha" data-sitekey="{{ RECAPTCHA_PUBLIC_KEY }}"></div>
+                    </div>
+
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-sign-in-alt me-2"></i>
@@ -73,4 +77,5 @@
         </div>
     </div>
 </div>
+<script src="https://www.google.com/recaptcha/api.js?hl={{ LANGUAGE_CODE }}" async defer></script>
 {% endblock %}

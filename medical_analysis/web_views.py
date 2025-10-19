@@ -12,12 +12,13 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
+from medical_mvp.settings import RECAPTCHA_SECRET_KEY, RECAPTCHA_PUBLIC_KEY
 from .constants import PARAMETER_TYPE_MAP
-from .enums import Status, AnalysisType
+from .enums import Status, AnalysisType, SubcriptionType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .file_processor import FileUploadHandler
-from medical_analysis.utils.core import get_client_ip, get_all_units_list, parse_value_with_operator
+from medical_analysis.utils.core import get_client_ip, get_all_units_list, parse_value_with_operator, verify_recaptcha
 from .utils.i18n_helpers import get_parameter_display_name, get_analysis_type_display
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,12 @@ def register_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
+        # Verify reCAPTCHA
+        recaptcha_response = request.POST.get("g-recaptcha-response")
+        if not verify_recaptcha(recaptcha_response, RECAPTCHA_SECRET_KEY):
+            messages.error(request, _("Пожалуйста, пройдите проверку CAPTCHA"))
+            return render(request, "medical_analysis/register.html")
+
         serializer = UserRegistrationSerializer(data=request.POST)
         if serializer.is_valid():
             user = serializer.save()
@@ -47,7 +54,9 @@ def register_view(request):
                 for error in errors:
                     messages.error(request, f"{field}: {error}")
 
-    return render(request, "medical_analysis/register.html")
+    # Pass reCAPTCHA public key to template
+    context = {"RECAPTCHA_PUBLIC_KEY": RECAPTCHA_PUBLIC_KEY}
+    return render(request, "medical_analysis/register.html", context)
 
 
 def login_view(request):
@@ -56,6 +65,12 @@ def login_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
+        # Verify reCAPTCHA
+        recaptcha_response = request.POST.get("g-recaptcha-response")
+        if not verify_recaptcha(recaptcha_response, RECAPTCHA_SECRET_KEY):
+            messages.error(request, _("Пожалуйста, пройдите проверку CAPTCHA"))
+            return render(request, "medical_analysis/login.html")
+
         serializer = UserLoginSerializer(data=request.POST)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
@@ -75,8 +90,8 @@ def login_view(request):
             for field, errors in serializer.errors.items():
                 for error in errors:
                     messages.error(request, error)
-
-    return render(request, "medical_analysis/login.html")
+    context = {"RECAPTCHA_PUBLIC_KEY": RECAPTCHA_PUBLIC_KEY}
+    return render(request, "medical_analysis/login.html", context)
 
 
 def logout_view(request):
@@ -110,11 +125,20 @@ def dashboard(request):
         user=request.user, processing_status__in=["uploading", "processing"]
     ).order_by("-upload_timestamp")
 
+    # Информация о подписке
+    sub = request.user.subscription
+    if sub.subscription_type == SubcriptionType.PAID:
+        remaining_uploads = _("Неограниченно")
+    else:
+        remaining_uploads = max(0, sub.remaining_uploads())
+
     context = {
         "total_analyses": total_analyses,
         "recent_analyses": recent_analyses,
         "latest_analyses": latest_analyses,
         "active_sessions": active_sessions,
+        "remaining_uploads": remaining_uploads,
+        "subscription_type": sub.subscription_type,
     }
 
     return render(request, "medical_analysis/dashboard.html", context)
@@ -123,10 +147,18 @@ def dashboard(request):
 @login_required
 def upload_file(request):
     """Страница загрузки файлов"""
+    sub = request.user.subscription
+    if not sub.can_upload():
+        messages.warning(request, _("Вы исчерпали лимит бесплатных загрузок. Оформите подписку для продолжения."))
+        return redirect("subscription_upgrade")
+
     if request.method == "POST" and request.FILES.get("file"):
         try:
             upload_handler = FileUploadHandler()
             session = upload_handler.handle_upload(request.FILES["file"], request.user)
+
+            sub.used_uploads += 1
+            sub.save()
 
             messages.success(request, _("Файл загружен и отправлен на обработку!"))
 
@@ -148,6 +180,18 @@ def upload_file(request):
 
     return render(request, "medical_analysis/upload.html")
 
+
+@login_required
+def subscription_upgrade(request):
+    """Страница апгрейда подписки"""
+    sub = request.user.subscription
+    remaining = sub.remaining_uploads()
+
+    context = {
+        'remaining_uploads': max(0, remaining) if remaining != float('inf') else _('Неограниченно'),
+        'subscription_type': sub.subscription_type,
+    }
+    return render(request, "medical_analysis/subscription_upgrade.html", context)
 
 @login_required
 def analysis_sessions(request):
@@ -847,3 +891,8 @@ def parse_reference_range(reference_str):
         pass
 
     return None, None
+
+@login_required
+def subscription_contact(request):
+    """Страница контакта для оплаты"""
+    return render(request, "medical_analysis/subscription_contact.html")

@@ -1,6 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from medical_analysis.models import UserProfile, MedicalData, AnalysisSession
+
+from medical_analysis.enums import SubcriptionType
+from medical_analysis.models import UserProfile, MedicalData, AnalysisSession, Subscription
 from django.utils import timezone
 from datetime import timedelta
 import random
@@ -41,6 +43,7 @@ class Command(BaseCommand):
                     first_name=f"Тест{i + 1}",
                     last_name="Пользователь",
                 )
+                Subscription.objects.create(user=user, subscription_type=SubcriptionType.TRIAL)
 
                 UserProfile.objects.create(user=user, language_preference="ru")
 
