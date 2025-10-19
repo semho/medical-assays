@@ -1,67 +1,133 @@
 {% extends 'medical_analysis/base.html' %}
+{% load i18n %}
 
-{% block title %}Главная - МедАнализатор{% endblock %}
+{% block title %}{% trans "home page" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<div class="text-center py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px;">
-    <h1 class="display-4 mb-3">
-        <i class="fas fa-heartbeat me-3"></i>
-        МедАнализатор
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold mb-3">
+        {% trans "medical analyzer" %}
     </h1>
-    <p class="lead mb-4">Безопасная платформа для анализа медицинских результатов</p>
-    <p class="h5 mb-4">Автоматическое распознавание • End-to-end шифрование • Удаление через 60 секунд</p>
-    <div class="mt-4">
-        <a href="{% url 'register' %}" class="btn btn-light btn-lg me-3">
-            <i class="fas fa-user-plus me-2"></i>
-            Начать бесплатно
-        </a>
-        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
-            <i class="fas fa-sign-in-alt me-2"></i>
-            Войти
-        </a>
-    </div>
+    <p class="lead mb-4">
+        {% blocktrans %}
+        automated analysis of medical test results with maximum data protection
+        {% endblocktrans %}
+    </p>
+
+    {% if user.is_authenticated %}
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                {% trans "dashboard" %}
+            </a>
+            <a href="{% url 'upload_file' %}" class="btn btn-success btn-lg">
+                <i class="fas fa-upload me-2"></i>
+                {% trans "upload analysis" %}
+            </a>
+        </div>
+    {% else %}
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus me-2"></i>
+                {% trans "register" %}
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                {% trans "login" %}
+            </a>
+        </div>
+    {% endif %}
 </div>
 
 <!-- Features Section -->
 <div class="row mb-5">
-    <div class="col-12 text-center mb-4">
-        <h2 class="mb-3">Ключевые возможности</h2>
-        <p class="text-muted">Современная платформа для управления медицинскими данными</p>
-    </div>
-    
     <div class="col-md-4 mb-4">
         <div class="card h-100 text-center border-0 shadow-sm">
             <div class="card-body p-4">
                 <div class="mb-3">
-                    <i class="fas fa-robot fa-3x text-primary"></i>
+                    <i class="fas fa-shield-alt fa-3x text-primary"></i>
                 </div>
-                <h4 class="card-title">OCR Распознавание</h4>
-                <p class="card-text">Автоматическое извлечение данных из PDF и изображений анализов</p>
+                <h4 class="card-title">{% trans "maximum security" %}</h4>
+                <p class="card-text">
+                    {% blocktrans %}
+                    end-to-end encryption and automatic file deletion
+                    {% endblocktrans %}
+                </p>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4 mb-4">
         <div class="card h-100 text-center border-0 shadow-sm">
             <div class="card-body p-4">
                 <div class="mb-3">
-                    <i class="fas fa-shield-alt fa-3x text-success"></i>
+                    <i class="fas fa-robot fa-3x text-success"></i>
                 </div>
-                <h4 class="card-title">Максимальная безопасность</h4>
-                <p class="card-text">AES-256 шифрование. Файлы удаляются через 60 секунд</p>
+                <h4 class="card-title">{% trans "automatic processing" %}</h4>
+                <p class="card-text">
+                    {% blocktrans %}
+                    ocr and ai for data extraction from documents
+                    {% endblocktrans %}
+                </p>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4 mb-4">
         <div class="card h-100 text-center border-0 shadow-sm">
             <div class="card-body p-4">
                 <div class="mb-3">
                     <i class="fas fa-chart-line fa-3x text-warning"></i>
                 </div>
-                <h4 class="card-title">Анализ динамики</h4>
-                <p class="card-text">Отслеживание изменений показателей во времени</p>
+                <h4 class="card-title">{% trans "trend analysis" %}</h4>
+                <p class="card-text">
+                    {% blocktrans %}
+                    track changes in your health indicators over time
+                    {% endblocktrans %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Supported Analysis Types -->
+<div class="card mb-5">
+    <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">
+            <i class="fas fa-flask me-2"></i>
+            {% trans "supported analysis types" %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        {% trans "blood general" %}
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        {% trans "blood biochem" %}
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        {% trans "hormones" %}
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <p class="text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {% blocktrans %}
+                    more analysis types coming soon
+                    {% endblocktrans %}
+                </p>
             </div>
         </div>
     </div>
@@ -69,11 +135,37 @@
 
 <!-- CTA Section -->
 <div class="text-center py-5" style="background: #f8f9fa; border-radius: 15px;">
-    <h2 class="mb-3">Начните отслеживать свое здоровье сегодня</h2>
-    <p class="lead mb-4">Регистрация занимает меньше минуты</p>
-    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
-        <i class="fas fa-rocket me-2"></i>
-        Создать аккаунт бесплатно
-    </a>
+    <h2 class="mb-3">
+        {% blocktrans %}
+        start tracking your health today
+        {% endblocktrans %}
+    </h2>
+    <p class="lead mb-4">
+        {% blocktrans %}
+        registration takes less than a minute
+        {% endblocktrans %}
+    </p>
+    {% if not user.is_authenticated %}
+        <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-rocket me-2"></i>
+            {% trans "create free account" %}
+        </a>
+    {% endif %}
+</div>
+
+<!-- Security Notice -->
+<div class="alert alert-info mt-5" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-shield-alt fa-2x me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">{% trans "security notice" %}</h5>
+            <p class="mb-0">
+                {% blocktrans %}
+                all files are automatically deleted after 60 seconds.
+                results are stored encrypted with your personal key.
+                {% endblocktrans %}
+            </p>
+        </div>
+    </div>
 </div>
 {% endblock %}

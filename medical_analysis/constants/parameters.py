@@ -7,6 +7,7 @@ PARAMETERS = {
     # ========== ОБЩИЙ АНАЛИЗ КРОВИ ==========
     # Абсолютные значения лейкоформулы
     "neutrophils_absolute": {
+        "name_key": "neutrophils absolute",
         "names_ru": ["Нейтрофилы абс."],
         "aliases": ["neutrophils_absolute", "ne_abs"],
         "type": "blood_general",
@@ -16,6 +17,7 @@ PARAMETERS = {
         "keywords": ["нейтрофилы абс"],
     },
     "lymphocytes_absolute": {
+        "name_key": "lymphocytes absolute",
         "names_ru": ["Лимфоциты абс."],
         "aliases": ["lymphocytes_absolute", "lymf_abs"],
         "type": "blood_general",
@@ -25,6 +27,7 @@ PARAMETERS = {
         "keywords": ["лимфоциты абс"],
     },
     "monocytes_absolute": {
+        "name_key": "monocytes absolute",
         "names_ru": ["Моноциты абс."],
         "aliases": ["monocytes_absolute", "mon_abs"],
         "type": "blood_general",
@@ -34,6 +37,7 @@ PARAMETERS = {
         "keywords": ["моноциты абс"],
     },
     "eosinophils_absolute": {
+        "name_key": "eosinophils absolute",
         "names_ru": ["Эозинофилы абс."],
         "aliases": ["eosinophils_absolute", "eo_abs"],
         "type": "blood_general",
@@ -43,6 +47,7 @@ PARAMETERS = {
         "keywords": ["эозинофилы абс"],
     },
     "basophils_absolute": {
+        "name_key": "basophils absolute",
         "names_ru": ["Базофилы абс."],
         "aliases": ["basophils_absolute", "ba_abs"],
         "type": "blood_general",
@@ -52,6 +57,7 @@ PARAMETERS = {
         "keywords": ["базофилы абс"],
     },
     "hemoglobin": {
+        "name_key": "hemoglobin",
         "names_ru": ["Гемоглобин"],
         "aliases": ["hemoglobin", "hgb", "hb"],
         "type": "blood_general",
@@ -61,6 +67,7 @@ PARAMETERS = {
         "keywords": ["гемоглобин", "hgb", "hb"],
     },
     "erythrocytes": {
+        "name_key": "erythrocytes",
         "names_ru": ["Эритроциты"],
         "aliases": ["erythrocytes", "rbc", "red_blood_cells"],
         "type": "blood_general",
@@ -70,6 +77,7 @@ PARAMETERS = {
         "keywords": ["эритроциты", "rbc"],
     },
     "leukocytes": {
+        "name_key": "leukocytes",
         "names_ru": ["Лейкоциты"],
         "aliases": ["leukocytes", "wbc", "white_blood_cells"],
         "type": "blood_general",
@@ -79,6 +87,7 @@ PARAMETERS = {
         "keywords": ["лейкоциты", "wbc"],
     },
     "platelets": {
+        "name_key": "platelets",
         "names_ru": ["Тромбоциты"],
         "aliases": ["platelets", "plt"],
         "type": "blood_general",
@@ -88,6 +97,7 @@ PARAMETERS = {
         "keywords": ["тромбоциты", "plt", "platelets"],
     },
     "hematocrit": {
+        "name_key": "hematocrit",
         "names_ru": ["Гематокрит"],
         "aliases": ["hematocrit", "hct"],
         "type": "blood_general",
@@ -97,6 +107,7 @@ PARAMETERS = {
         "keywords": ["гематокрит", "hct"],
     },
     "esr": {
+        "name_key": "esr",
         "names_ru": ["СОЭ"],
         "aliases": ["esr", "esr_westergren"],
         "type": "blood_general",
@@ -107,6 +118,7 @@ PARAMETERS = {
     },
     # Лейкоформула
     "neutrophils_percentage": {
+        "name_key": "neutrophils",
         "names_ru": ["Нейтрофилы"],
         "display_suffix": "%",
         "aliases": ["neutrophils", "neutrophils_percentage", "neutrophils_percent", "ne_percent"],
@@ -117,6 +129,7 @@ PARAMETERS = {
         "keywords": ["нейтрофилы", "neutrophils", "ne"],
     },
     "lymphocytes_percentage": {
+        "name_key": "lymphocytes",
         "names_ru": ["Лимфоциты"],
         "display_suffix": "%",
         "aliases": ["lymphocytes", "lymphocytes_percentage", "lymphocytes_percent", "lymf_percent"],
@@ -127,6 +140,7 @@ PARAMETERS = {
         "keywords": ["лимфоциты", "lymphocytes", "lymf"],
     },
     "monocytes_percentage": {
+        "name_key": "monocytes",
         "names_ru": ["Моноциты"],
         "display_suffix": "%",
         "aliases": ["monocytes", "monocytes_percentage", "monocytes_percent", "mon_percent"],
@@ -137,6 +151,7 @@ PARAMETERS = {
         "keywords": ["моноциты", "monocytes", "mon"],
     },
     "eosinophils_percentage": {
+        "name_key": "eosinophils",
         "names_ru": ["Эозинофилы"],
         "display_suffix": "%",
         "aliases": ["eosinophils", "eosinophils_percentage", "eosinophils_percent", "eo_percent"],
@@ -147,6 +162,7 @@ PARAMETERS = {
         "keywords": ["эозинофилы", "eosinophils", "eo"],
     },
     "basophils_percentage": {
+        "name_key": "basophils",
         "names_ru": ["Базофилы"],
         "display_suffix": "%",
         "aliases": ["basophils", "basophils_percentage", "basophils_percent", "ba_percent"],
@@ -158,6 +174,7 @@ PARAMETERS = {
     },
     # Эритроцитарные индексы
     "mcv": {
+        "name_key": "mcv",
         "names_ru": ["Средний объем эритроцита (MCV)"],
         "aliases": ["mcv", "mean_corpuscular_volume"],
         "type": "blood_general",
@@ -167,6 +184,7 @@ PARAMETERS = {
         "keywords": ["mcv", "mean corpuscular volume"],
     },
     "mch": {
+        "name_key": "mch",
         "names_ru": ["Среднее содержание гемоглобина в эритроците (MCH)"],
         "aliases": ["mch", "mean_corpuscular_hemoglobin"],
         "type": "blood_general",
@@ -176,6 +194,7 @@ PARAMETERS = {
         "keywords": ["mch", "mean corpuscular hemoglobin"],
     },
     "mchc": {
+        "name_key": "mchc",
         "names_ru": ["Средняя концентрация гемоглобина в эритроците (MCHC)"],
         "aliases": ["mchc", "mean_corpuscular_hemoglobin_concentration"],
         "type": "blood_general",
@@ -185,6 +204,7 @@ PARAMETERS = {
         "keywords": ["mchc", "mean corpuscular hemoglobin concentration"],
     },
     "rdw_cv": {
+        "name_key": "rdw cv",
         "names_ru": ["Ширина распределения эритроцитов (RDW-CV)"],
         "aliases": ["rdw_cv", "red_cell_distribution_width_cv"],
         "type": "blood_general",
@@ -194,6 +214,7 @@ PARAMETERS = {
         "keywords": ["rdw-cv", "red cell distribution width cv"],
     },
     "rdw_sd": {
+        "name_key": "rdw sd",
         "names_ru": ["Ширина распределения эритроцитов (RDW-SD)"],
         "aliases": ["rdw_sd", "red_cell_distribution_width_sd"],
         "type": "blood_general",
@@ -204,6 +225,7 @@ PARAMETERS = {
     },
     # Незрелые формы
     "immature_granulocytes_percentage": {
+        "name_key": "immature granulocytes",
         "names_ru": ["Незрелые гранулоциты %"],
         "aliases": ["immature_granulocytes_percentage"],
         "type": "blood_general",
@@ -213,6 +235,7 @@ PARAMETERS = {
         "keywords": ["незрелые гранулоциты"],
     },
     "immature_granulocytes_absolute": {
+        "name_key": "immature granulocytes absolute",
         "names_ru": ["Незрелые гранулоциты абс."],
         "aliases": ["immature_granulocytes_absolute"],
         "type": "blood_general",
@@ -222,6 +245,7 @@ PARAMETERS = {
         "keywords": ["незрелые гранулоциты абс"],
     },
     "normoblasts_percentage": {
+        "name_key": "normoblasts",
         "names_ru": ["Нормобласты %"],
         "aliases": ["normoblasts_percentage"],
         "type": "blood_general",
@@ -231,6 +255,7 @@ PARAMETERS = {
         "keywords": ["нормобласты"],
     },
     "normoblasts_absolute": {
+        "name_key": "normoblasts absolute",
         "names_ru": ["Нормобласты абс."],
         "aliases": ["normoblasts_absolute"],
         "type": "blood_general",
@@ -241,6 +266,7 @@ PARAMETERS = {
     },
     # Тромбоцитарные индексы
     "mpv": {
+        "name_key": "mpv",
         "names_ru": ["Средний объем тромбоцитов (MPV)"],
         "aliases": ["mpv", "mean_platelet_volume"],
         "type": "blood_general",
@@ -250,6 +276,7 @@ PARAMETERS = {
         "keywords": ["mpv", "mean platelet volume"],
     },
     "pct": {
+        "name_key": "pct",
         "names_ru": ["Тромбокрит (PCT)"],
         "aliases": ["pct", "platelet_crit"],
         "type": "blood_general",
@@ -259,6 +286,7 @@ PARAMETERS = {
         "keywords": ["pct", "platelet crit"],
     },
     "pdw": {
+        "name_key": "pdw",
         "names_ru": ["Ширина распределения тромбоцитов (PDW)"],
         "aliases": ["pdw", "platelet_distribution_width"],
         "type": "blood_general",
@@ -269,6 +297,7 @@ PARAMETERS = {
     },
     # ========== БИОХИМИЯ ==========
     "glucose": {
+        "name_key": "glucose",
         "names_ru": ["Глюкоза"],
         "aliases": ["glucose", "sugar"],
         "type": "blood_biochem",
@@ -278,6 +307,7 @@ PARAMETERS = {
         "keywords": ["глюкоза", "glucose"],
     },
     "creatinine": {
+        "name_key": "creatinine",
         "names_ru": ["Креатинин в крови"],
         "aliases": ["creatinine"],
         "type": "blood_biochem",
@@ -287,6 +317,7 @@ PARAMETERS = {
         "keywords": ["креатинин", "creatinine"],
     },
     "urea": {
+        "name_key": "urea",
         "names_ru": ["Мочевина"],
         "aliases": ["urea"],
         "type": "blood_biochem",
@@ -296,6 +327,7 @@ PARAMETERS = {
         "keywords": ["мочевина", "urea"],
     },
     "bilirubin_total": {
+        "name_key": "bilirubin total",
         "names_ru": ["Билирубин общий"],
         "aliases": ["bilirubin_total", "total_bilirubin"],
         "type": "blood_biochem",
@@ -305,6 +337,7 @@ PARAMETERS = {
         "keywords": ["билирубин общий", "total bilirubin"],
     },
     "alt": {
+        "name_key": "alt",
         "names_ru": ["АЛТ (аланинаминотрансфераза)"],
         "aliases": ["alt", "alat", "alanine_aminotransferase"],
         "type": "blood_biochem",
@@ -314,6 +347,7 @@ PARAMETERS = {
         "keywords": ["алт", "аланинаминотрансфераза"],
     },
     "ast": {
+        "name_key": "ast",
         "names_ru": ["АСТ (аспартатаминотрансфераза)"],
         "aliases": ["ast", "asat", "aspartate_aminotransferase"],
         "type": "blood_biochem",
@@ -323,6 +357,7 @@ PARAMETERS = {
         "keywords": ["аст", "аспартатаминотрансфераза"],
     },
     "cholesterol": {
+        "name_key": "cholesterol",
         "names_ru": ["Холестерин общий"],
         "aliases": ["cholesterol", "total_cholesterol"],
         "type": "blood_biochem",
@@ -332,6 +367,7 @@ PARAMETERS = {
         "keywords": ["холестерин общий", "total cholesterol"],
     },
     "gfr_ckd_epi": {
+        "name_key": "Glomerular filtration rate",
         "names_ru": ["Скорость клубочковой фильтрации (СКФ), расчет по формуле CKD-EPI"],
         "aliases": ["gfr_ckd_epi", "gfr", "egfr"],
         "type": "blood_biochem",
@@ -341,6 +377,7 @@ PARAMETERS = {
         "keywords": ["скф", "gfr", "ckd-epi"],
     },
     "atherogenic_index": {
+        "name_key": "atherogenic index",
         "names_ru": ["Индекс атерогенности"],
         "aliases": ["atherogenic_index", "atherogenic_coefficient"],
         "type": "blood_biochem",
@@ -351,6 +388,7 @@ PARAMETERS = {
     },
     # ========== ГОРМОНЫ ==========
     "tsh": {
+        "name_key": "tsh",
         "names_ru": ["ТТГ (тиреотропный гормон)"],
         "aliases": ["tsh", "thyroid_stimulating_hormone"],
         "type": "hormones",
@@ -360,6 +398,7 @@ PARAMETERS = {
         "keywords": ["ттг", "tsh", "thyroid stimulating hormone"],
     },
     "free_t4": {
+        "name_key": "free t4",
         "names_ru": ["Свободный Т4"],
         "aliases": ["free_t4", "ft4", "free_thyroxine"],
         "type": "hormones",
@@ -369,6 +408,7 @@ PARAMETERS = {
         "keywords": ["свободный т4", "free t4", "ft4"],
     },
     "free_t3": {
+        "name_key": "free t3",
         "names_ru": ["Свободный Т3"],
         "aliases": ["free_t3", "ft3", "free_triiodothyronine"],
         "type": "hormones",
@@ -378,6 +418,7 @@ PARAMETERS = {
         "keywords": ["свободный т3", "free t3", "ft3"],
     },
     "testosterone": {
+        "name_key": "testosterone",
         "names_ru": ["Тестостерон"],
         "aliases": ["testosterone"],
         "type": "hormones",
@@ -387,6 +428,7 @@ PARAMETERS = {
         "keywords": ["тестостерон", "testosterone"],
     },
     "estradiol": {
+        "name_key": "estradiol",
         "names_ru": ["Эстрадиол"],
         "aliases": ["estradiol", "e2"],
         "type": "hormones",
@@ -396,6 +438,7 @@ PARAMETERS = {
         "keywords": ["эстрадиол", "estradiol"],
     },
     "prolactin": {
+        "name_key": "prolactin",
         "names_ru": ["Пролактин"],
         "aliases": ["prolactin", "prl"],
         "type": "hormones",
@@ -405,6 +448,7 @@ PARAMETERS = {
         "keywords": ["пролактин", "prolactin"],
     },
     "cortisol": {
+        "name_key": "cortisol",
         "names_ru": ["Кортизол"],
         "aliases": ["cortisol"],
         "type": "hormones",
@@ -414,6 +458,7 @@ PARAMETERS = {
         "keywords": ["кортизол", "cortisol"],
     },
     "fsh": {
+        "name_key": "fsh",
         "names_ru": ["ФСГ (фолликулостимулирующий гормон)"],
         "aliases": ["fsh", "follicle_stimulating_hormone"],
         "type": "hormones",
@@ -423,6 +468,7 @@ PARAMETERS = {
         "keywords": ["фсг", "fsh", "follicle stimulating"],
     },
     "lh": {
+        "name_key": "lh",
         "names_ru": ["ЛГ (лютеинизирующий гормон)"],
         "aliases": ["lh", "luteinizing_hormone"],
         "type": "hormones",
@@ -432,6 +478,7 @@ PARAMETERS = {
         "keywords": ["лг", "lh", "luteinizing"],
     },
     "shbg": {
+        "name_key": "shbg",
         "names_ru": ["ГСПГ (глобулин, связывающий половые гормоны)"],
         "aliases": ["shbg", "sex_hormone_binding_globulin"],
         "type": "hormones",
@@ -441,6 +488,7 @@ PARAMETERS = {
         "keywords": ["гспг", "shbg", "sex hormone binding"],
     },
     "psa": {
+        "name_key": "psa",
         "names_ru": ["ПСА (простатспецифический антиген)"],
         "aliases": ["psa", "prostate_specific_antigen"],
         "type": "hormones",
@@ -450,6 +498,7 @@ PARAMETERS = {
         "keywords": ["пса", "psa", "prostate specific"],
     },
     "free_androgen_index": {
+        "name_key": "free androgen index",
         "names_ru": ["Индекс свободных андрогенов"],
         "aliases": ["free_androgen_index", "fai"],
         "type": "hormones",

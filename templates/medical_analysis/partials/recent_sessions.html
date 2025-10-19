@@ -1,24 +1,25 @@
 {% for session in sessions %}
+{% load i18n %}
 <tr>
     <td><i class="fas fa-file-alt me-2"></i>{{ session.original_filename|truncatechars:30 }}</td>
     <td>{{ session.upload_timestamp|date:"H:i" }}</td>
     <td>
         {% if session.processing_status == 'completed' %}
-            <span class="badge bg-success">Готово</span>
+            <span class="badge bg-success">{{ _("готово")|capfirst }}</span>
         {% elif session.processing_status == 'processing' %}
-            <span class="badge bg-info">Обработка</span>
+            <span class="badge bg-info">{% trans "Обработка" %}</span>
         {% elif session.processing_status == 'error' %}
-            <span class="badge bg-danger">Ошибка</span>
+            <span class="badge bg-danger">{% trans "Ошибка" %}</span>
         {% endif %}
     </td>
     <td>
         {% if session.processing_status == 'completed' %}
-            <a href="{% url 'analysis_results' %}" class="btn btn-sm btn-primary">Просмотр</a>
+            <a href="{% url 'analysis_results' %}" class="btn btn-sm btn-primary">{% trans "Просмотр" %}</a>
         {% endif %}
     </td>
 </tr>
 {% empty %}
 <tr>
-    <td colspan="4" class="text-center text-muted">Нет загрузок</td>
+    <td colspan="4" class="text-center text-muted">{% trans "Нет загрузок" %}</td>
 </tr>
 {% endfor %}

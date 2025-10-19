@@ -1,12 +1,12 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Настройки профиля - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Настройки профиля" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">
         <i class="fas fa-user-cog me-2"></i>
-        Настройки профиля
+        {% trans "Настройки профиля" %}
     </h1>
 </div>
 
@@ -15,7 +15,7 @@
         <!-- Личные данные -->
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0">Личные данные</h5>
+                <h5 class="mb-0">{% trans "Личные данные" %}</h5>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -23,7 +23,7 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="first_name" class="form-label">Имя</label>
+                            <label for="first_name" class="form-label">{% trans "Имя" %}</label>
                             <input type="text" 
                                    class="form-control" 
                                    id="first_name" 
@@ -31,7 +31,7 @@
                                    value="{{ user.first_name }}">
                         </div>
                         <div class="col-md-6">
-                            <label for="last_name" class="form-label">Фамилия</label>
+                            <label for="last_name" class="form-label">{% trans "Фамилия" %}</label>
                             <input type="text" 
                                    class="form-control" 
                                    id="last_name" 
@@ -51,7 +51,7 @@
                     
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>
-                        Сохранить изменения
+                        {% trans "Сохранить изменения" %}
                     </button>
                 </form>
             </div>
@@ -60,14 +60,14 @@
         <!-- Настройки языка -->
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0">Язык интерфейса</h5>
+                <h5 class="mb-0">{% trans "Язык интерфейса" %}</h5>
             </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="language_preference" class="form-label">Выберите язык</label>
+                        <label for="language_preference" class="form-label">{% trans "Выберите язык" %}</label>
                         <select class="form-select" id="language_preference" name="language_preference">
                             <option value="ru" {% if profile.language_preference == 'ru' %}selected{% endif %}>
                                 Русский
@@ -80,7 +80,7 @@
                     
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>
-                        Применить
+                        {% trans "Применить" %}
                     </button>
                 </form>
             </div>
@@ -91,32 +91,32 @@
         <!-- Информация об аккаунте -->
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0">Информация об аккаунте</h5>
+                <h5 class="mb-0">{% trans "Информация об аккаунте" %}</h5>
             </div>
             <div class="card-body">
-                <p><strong>Имя пользователя:</strong><br>{{ user.username }}</p>
-                <p><strong>Дата регистрации:</strong><br>{{ user.date_joined|date:"d.m.Y" }}</p>
-                <p class="mb-0"><strong>Последний вход:</strong><br>{{ user.last_login|date:"d.m.Y H:i" }}</p>
+                <p><strong>Username:</strong><br>{{ user.username }}</p>
+                <p><strong>{% trans "Дата регистрации" %}:</strong><br>{{ user.date_joined|date:"d.m.Y" }}</p>
+                <p class="mb-0"><strong>{% trans "Последний вход" %}:</strong><br>{{ user.last_login|date:"d.m.Y H:i" }}</p>
             </div>
         </div>
         
         <!-- Безопасность -->
         <div class="card border-success">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Безопасность</h5>
+                <h5 class="mb-0">{% trans "Безопасность" %}</h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
                     <i class="fas fa-shield-alt text-success me-2"></i>
-                    <span>Индивидуальное шифрование активно</span>
+                    <span>{% trans "Индивидуальное шифрование активно" %}</span>
                 </div>
                 <div class="mb-3">
                     <i class="fas fa-clock text-success me-2"></i>
-                    <span>Автоудаление файлов: 60 сек</span>
+                    <span>{% trans "Автоудаление файлов" %}: 60 {% trans "сек" %}</span>
                 </div>
                 <div>
                     <i class="fas fa-check-circle text-success me-2"></i>
-                    <span>GDPR совместимость</span>
+                    <span>GDPR {% trans "совместимость" %}</span>
                 </div>
             </div>
         </div>

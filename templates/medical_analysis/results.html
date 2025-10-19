@@ -1,18 +1,18 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Результаты анализов - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Результаты анализов" %} - {% trans "МедАнализатор" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Результаты анализов</h1>
+    <h1 class="h2">{% trans "Результаты анализов" %}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{% url 'compare_analyses' %}" class="btn btn-outline-primary me-2">
             <i class="fas fa-balance-scale me-1"></i>
-            Сравнить
+            {% trans "compare" %}
         </a>
         <a href="{% url 'upload_file' %}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i>
-            Новый анализ
+            {% trans "Новый анализ" %}
         </a>
     </div>
 </div>
@@ -22,9 +22,9 @@
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-3">
-                <label for="type" class="form-label">Тип анализа</label>
+                <label for="type" class="form-label">{% trans "Тип анализа" %}</label>
                 <select class="form-select" id="type" name="type">
-                    <option value="">Все типы</option>
+                    <option value="">{% trans "Все типы" %}</option>
                     {% for value, label in analysis_types %}
                         <option value="{{ value }}" {% if type_filter == value %}selected{% endif %}>
                             {{ label }}
@@ -33,20 +33,21 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="date_from" class="form-label">Дата от</label>
-                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="date_from" class="form-label">{% trans "Дата от" %}</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from|default:'' }}">
+
             </div>
             <div class="col-md-3">
-                <label for="date_to" class="form-label">Дата до</label>
-                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                <label for="date_to" class="form-label">{% trans "Дата до" %}</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to|default:'' }}">
             </div>
             <div class="col-md-3 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2">
                     <i class="fas fa-filter me-1"></i>
-                    Применить
+                    {% trans "Применить" %}
                 </button>
                 <a href="{% url 'analysis_results' %}" class="btn btn-outline-secondary">
-                    Сбросить
+                    {% trans "Сбросить" %}
                 </a>
             </div>
         </form>
@@ -74,28 +75,28 @@
                     <div class="mb-3">
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>
-                            Загружен: {{ medical_data.created_at|date:"d.m.Y H:i" }}
+                            {% trans "Загружен" %}: {{ medical_data.created_at|date:"d.m.Y H:i" }}
                         </small>
                     </div>
                     
                     <div class="mb-3">
                         <small class="text-muted">
                             <i class="fas fa-shield-alt me-1 text-success"></i>
-                            Данные зашифрованы
+                            {% trans "Данные зашифрованы" %}
                         </small>
                     </div>
                     
                     <div class="d-grid gap-2">
                         <a href="{% url 'analysis_detail' medical_data.id %}" class="btn btn-primary">
                             <i class="fas fa-eye me-1"></i>
-                            Подробнее
+                            {% trans "Подробнее" %}
                         </a>
-                        <form method="post" action="{% url 'delete_analysis' medical_data.id %}" 
-                              onsubmit="return confirm('Удалить этот анализ?');">
+                        <form method="post" action="{% url 'delete_analysis' medical_data.id %}"
+                              onsubmit="return confirm('{% blocktrans %}Удалить этот анализ{% endblocktrans %}');">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-danger">
                                 <i class="fas fa-trash me-1"></i>
-                                Удалить
+                                {% trans "Удалить" %}
                             </button>
                         </form>
                     </div>
@@ -112,21 +113,21 @@
                     {% if page_obj.has_previous %}
                         <li class="page-item">
                             <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
-                                Предыдущая
+                                {% trans "Предыдущая" %}
                             </a>
                         </li>
                     {% endif %}
                     
                     <li class="page-item active">
                         <span class="page-link">
-                            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            {% trans "Страница" %} {{ page_obj.number }} {% trans "из" %} {{ page_obj.paginator.num_pages }}
                         </span>
                     </li>
                     
                     {% if page_obj.has_next %}
                         <li class="page-item">
                             <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
-                                Следующая
+                                {% trans "Следующая" %}
                             </a>
                         </li>
                     {% endif %}
@@ -138,11 +139,11 @@
         <div class="col-12">
             <div class="text-center py-5">
                 <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Результатов не найдено</h5>
-                <p class="text-muted">Загрузите первый анализ или измените фильтры</p>
+                <h5 class="text-muted">{% trans "Результатов не найдено" %}</h5>
+                <p class="text-muted">{% trans "Загрузите первый анализ или измените фильтры" %}</p>
                 <a href="{% url 'upload_file' %}" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i>
-                    Загрузить анализ
+                    {% trans "Загрузить анализ" %}
                 </a>
             </div>
         </div>

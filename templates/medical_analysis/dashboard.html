@@ -1,15 +1,15 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Панель управления - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "dashboard" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Панель управления</h1>
+    <h1 class="h2">{% trans "dashboard" %}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <a href="{% url 'upload_file' %}" class="btn btn-primary">
                 <i class="fas fa-plus me-1"></i>
-                Новый анализ
+                {% trans "Новый анализ" %}
             </a>
         </div>
     </div>
@@ -22,7 +22,7 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h5 class="card-title text-uppercase text-white-50 mb-1">Всего анализов</h5>
+                        <h5 class="card-title text-uppercase text-white-50 mb-1">{% trans "Всего анализов" %}</h5>
                         <h2 class="text-white mb-0">{{ total_analyses }}</h2>
                     </div>
                     <div class="col-auto">
@@ -38,7 +38,7 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h5 class="card-title text-uppercase text-white-50 mb-1">За месяц</h5>
+                        <h5 class="card-title text-uppercase text-white-50 mb-1">{% trans "За месяц" %}</h5>
                         <h2 class="text-white mb-0">{{ recent_analyses }}</h2>
                     </div>
                     <div class="col-auto">
@@ -54,7 +54,7 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h5 class="card-title text-uppercase text-white-50 mb-1">Обработка</h5>
+                        <h5 class="card-title text-uppercase text-white-50 mb-1">{% trans "Обработка" %}</h5>
                         <h2 class="text-white mb-0">{{ active_sessions|length }}</h2>
                     </div>
                     <div class="col-auto">
@@ -70,10 +70,10 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h5 class="card-title text-uppercase text-white-50 mb-1">Безопасность</h5>
+                        <h5 class="card-title text-uppercase text-white-50 mb-1">{% trans "Безопасность" %}</h5>
                         <div class="d-flex align-items-center">
                             <i class="fas fa-shield-alt text-white me-2"></i>
-                            <small class="text-white">Активна</small>
+                            <small class="text-white">{% trans "Активна" %}</small>
                         </div>
                     </div>
                     <div class="col-auto">
@@ -93,10 +93,10 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-history me-2 text-primary"></i>
-                        Последние анализы
+                        {% trans "Последние анализы" %}
                     </h5>
                     <a href="{% url 'analysis_results' %}" class="btn btn-outline-primary btn-sm">
-                        Смотреть все
+                        {% trans "Смотреть все" %}
                     </a>
                 </div>
             </div>
@@ -106,10 +106,10 @@
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Дата</th>
-                                    <th>Тип анализа</th>
-                                    <th>Статус</th>
-                                    <th>Действия</th>
+                                    <th>{% trans "Дата" %}</th>
+                                    <th>{% trans "Тип анализа" %}</th>
+                                    <th>{% trans "Статус" %}</th>
+                                    <th>{% trans "Действия" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,11 +123,11 @@
                                     <td>
                                         <span class="badge bg-info">
                                             {% if analysis.analysis_type == 'blood_general' %}
-                                                ОАК
+                                                {% trans "ОАК" %}
                                             {% elif analysis.analysis_type == 'blood_biochem' %}
-                                                Биохимия
+                                                {% trans "Биохимия" %}
                                             {% elif analysis.analysis_type == 'hormones' %}
-                                                Гормоны
+                                                {% trans "Гормоны" %}
                                             {% else %}
                                                 {{ analysis.get_analysis_type_display }}
                                             {% endif %}
@@ -136,14 +136,14 @@
                                     <td>
                                         <span class="status-badge status-completed">
                                             <i class="fas fa-check-circle me-1"></i>
-                                            Готов
+                                            {% trans "Готов" %}
                                         </span>
                                     </td>
                                     <td>
                                         <a href="{% url 'analysis_detail' analysis.id %}" 
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye me-1"></i>
-                                            Просмотр
+                                            {% trans "Просмотр" %}
                                         </a>
                                     </td>
                                 </tr>
@@ -154,11 +154,11 @@
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Анализов пока нет</h5>
-                        <p class="text-muted">Загрузите первый анализ, чтобы начать отслеживание показателей здоровья</p>
+                        <h5 class="text-muted">{% trans "Анализов пока нет" %}</h5>
+                        <p class="text-muted">{% trans "Загрузите первый анализ, чтобы начать отслеживание показателей здоровья" %}</p>
                         <a href="{% url 'upload_file' %}" class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i>
-                            Загрузить анализ
+                            {% trans "Загрузить анализ" %}
                         </a>
                     </div>
                 {% endif %}
@@ -172,7 +172,7 @@
             <div class="card-header bg-white">
                 <h5 class="mb-0">
                     <i class="fas fa-sync-alt me-2 text-warning"></i>
-                    Обработка файлов
+                    {% trans "Обработка файлов" %}
                 </h5>
             </div>
             <div class="card-body">
@@ -191,12 +191,12 @@
                                 {% if session.processing_status == 'uploading' %}
                                     <span class="status-badge status-uploading">
                                         <i class="fas fa-upload me-1"></i>
-                                        Загрузка
+                                        {% trans "Загрузка" %}
                                     </span>
                                 {% elif session.processing_status == 'processing' %}
                                     <span class="status-badge status-processing">
                                         <i class="fas fa-cog fa-spin me-1"></i>
-                                        Обработка
+                                        {% trans "Обработка" %}
                                     </span>
                                     <div class="progress progress-custom mt-2">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
@@ -205,12 +205,12 @@
                                 {% elif session.processing_status == 'completed' %}
                                     <span class="status-badge status-completed">
                                         <i class="fas fa-check-circle me-1"></i>
-                                        Готово
+                                        {% trans "Готово" %}
                                     </span>
                                 {% elif session.processing_status == 'error' %}
                                     <span class="status-badge status-error">
                                         <i class="fas fa-exclamation-triangle me-1"></i>
-                                        Ошибка
+                                        {% trans "Ошибка" %}
                                     </span>
                                 {% endif %}
                             </div>
@@ -229,8 +229,8 @@
                 {% else %}
                     <div class="text-center py-3">
                         <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                        <p class="text-muted mb-0">Нет активных задач</p>
-                        <small class="text-muted">Все файлы обработаны</small>
+                        <p class="text-muted mb-0">{% trans "Нет активных задач" %}</p>
+                        <small class="text-muted">{% trans "Все файлы обработаны" %}</small>
                     </div>
                 {% endif %}
             </div>
@@ -245,7 +245,7 @@
             <div class="card-header bg-white">
                 <h5 class="mb-0">
                     <i class="fas fa-bolt me-2 text-warning"></i>
-                    Быстрые действия
+                    {% trans "Быстрые действия" %}
                 </h5>
             </div>
             <div class="card-body">
@@ -254,7 +254,7 @@
                         <div class="d-grid">
                             <a href="{% url 'upload_file' %}" class="btn btn-outline-primary">
                                 <i class="fas fa-cloud-upload-alt me-2"></i>
-                                Загрузить анализ
+                                {% trans "upload analysis" %}
                             </a>
                         </div>
                     </div>
@@ -262,7 +262,7 @@
                         <div class="d-grid">
                             <a href="{% url 'compare_analyses' %}" class="btn btn-outline-info">
                                 <i class="fas fa-balance-scale me-2"></i>
-                                Сравнить анализы
+                                {% trans "Сравнить анализы" %}
                             </a>
                         </div>
                     </div>
@@ -270,7 +270,7 @@
                         <div class="d-grid">
                             <a href="{% url 'export_data' %}" class="btn btn-outline-success">
                                 <i class="fas fa-download me-2"></i>
-                                Экспорт данных
+                                {% trans "Экспорт данных" %}
                             </a>
                         </div>
                     </div>
@@ -278,7 +278,7 @@
                         <div class="d-grid">
                             <a href="{% url 'profile_settings' %}" class="btn btn-outline-secondary">
                                 <i class="fas fa-cog me-2"></i>
-                                Настройки
+                                {% trans "Настройки" %}
                             </a>
                         </div>
                     </div>
@@ -298,16 +298,15 @@
                         <i class="fas fa-shield-alt fa-2x text-success"></i>
                     </div>
                     <div class="flex-grow-1">
-                        <h6 class="card-title text-success mb-1">Безопасность данных</h6>
+                        <h6 class="card-title text-success mb-1">{% trans "Безопасность данных" %}</h6>
                         <p class="card-text mb-0">
-                            Все ваши медицинские данные зашифрованы индивидуальным ключом. 
-                            Оригинальные файлы автоматически удаляются через 60 секунд после обработки.
+                            {% trans "Все ваши медицинские данные зашифрованы индивидуальным ключом. Оригинальные файлы автоматически удаляются через 60 секунд после обработки" %}
                         </p>
                     </div>
                     <div>
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>
-                            Соответствует GDPR
+                            {% trans "Соответствует" %} GDPR
                         </small>
                     </div>
                 </div>

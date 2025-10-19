@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from django.utils.translation import gettext as _
 
 def custom_404(request, exception):
     """Кастомная страница для ошибки 404"""

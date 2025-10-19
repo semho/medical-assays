@@ -11,8 +11,8 @@ from medical_analysis.serializers import (
     AnalysisSessionSerializer,
     MedicalDataSerializer,
 )
-from medical_analysis.utils import get_client_ip
-
+from medical_analysis.utils.core import get_client_ip
+from django.utils.translation import gettext as _
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger("security")
 
@@ -56,7 +56,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
             return Response({"status": "success", "language": language})
         else:
-            return Response({"error": "Неподдерживаемый язык"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": _("Неподдерживаемый язык")}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FileUploadViewSet(viewsets.ViewSet):
@@ -85,7 +85,7 @@ class FileUploadViewSet(viewsets.ViewSet):
             SecurityLog.objects.create(
                 user=request.user,
                 action="FILE_UPLOAD_INITIATED",
-                details=f"Начата загрузка файла: {uploaded_file.name}",
+                details=_(f"Начата загрузка файла: {uploaded_file.name}"),
                 ip_address=get_client_ip(request),
             )
 
@@ -93,7 +93,7 @@ class FileUploadViewSet(viewsets.ViewSet):
                 {
                     "session_id": session.pk,
                     "status": session.processing_status,
-                    "message": "Файл загружен и отправлен на обработку",
+                    "message": _("Файл загружен и отправлен на обработку"),
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -102,7 +102,7 @@ class FileUploadViewSet(viewsets.ViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Ошибка загрузки файла: {e}")
-            return Response({"error": "Внутренняя ошибка сервера"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": _("Внутренняя ошибка сервера")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=["get"])
     def status(self, request):
@@ -110,7 +110,7 @@ class FileUploadViewSet(viewsets.ViewSet):
         session_id = request.query_params.get("session_id")
 
         if not session_id:
-            return Response({"error": "Не указан session_id"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": _("Не указан session_id")}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             session = AnalysisSession.objects.get(id=session_id, user=request.user)
@@ -131,7 +131,7 @@ class FileUploadViewSet(viewsets.ViewSet):
             return Response(response_data)
 
         except AnalysisSession.DoesNotExist:
-            return Response({"error": "Сессия не найдена"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": _("Сессия не найдена")}, status=status.HTTP_404_NOT_FOUND)
 
 
 class AnalysisSessionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -151,7 +151,7 @@ class AnalysisSessionViewSet(viewsets.ReadOnlyModelViewSet):
 
             if session.processing_status != "completed":
                 return Response(
-                    {"error": "Анализ еще не завершен", "status": session.processing_status},
+                    {"error": _("Анализ еще не завершен"), "status": session.processing_status},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -161,7 +161,7 @@ class AnalysisSessionViewSet(viewsets.ReadOnlyModelViewSet):
 
                 if decrypted_data is None:
                     return Response(
-                        {"error": "Ошибка расшифровки данных"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"error": _("Ошибка расшифровки данных")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
                 response_data = {
@@ -180,18 +180,18 @@ class AnalysisSessionViewSet(viewsets.ReadOnlyModelViewSet):
                 SecurityLog.objects.create(
                     user=request.user,
                     action="DATA_ACCESS",
-                    details=f"Доступ к результатам анализа, сессия: {session.id}",
+                    details=_(f"Доступ к результатам анализа, сессия: {session.id}"),
                     ip_address=get_client_ip(request),
                 )
 
                 return Response(response_data)
 
             except MedicalData.DoesNotExist:
-                return Response({"error": "Данные анализа не найдены"}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"error": _("Данные анализа не найдены")}, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
             logger.error(f"Ошибка получения результатов анализа: {e}")
-            return Response({"error": "Ошибка получения данных"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": _("Ошибка получения данных")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
@@ -230,7 +230,7 @@ class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
         analysis_type = request.query_params.get("type")
 
         if not analysis_type:
-            return Response({"error": "Не указан тип анализа"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": _("Не указан тип анализа")}, status=status.HTTP_400_BAD_REQUEST)
 
         medical_data = self.get_queryset().filter(analysis_type=analysis_type).order_by("-analysis_date")
 
@@ -256,7 +256,7 @@ class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
         id2 = request.query_params.get("id2")
 
         if not id1 or not id2:
-            return Response({"error": "Не указаны ID анализов для сравнения"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": _("Не указаны ID анализов для сравнения")}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             data1 = self.get_queryset().get(id=id1)
@@ -266,7 +266,7 @@ class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
             decrypted2 = data2.decrypt_data()
 
             if not decrypted1 or not decrypted2:
-                return Response({"error": "Ошибка расшифровки данных"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"error": _("Ошибка расшифровки данных")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             comparison = {
                 "analysis1": {
@@ -289,7 +289,7 @@ class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(comparison)
 
         except MedicalData.DoesNotExist:
-            return Response({"error": "Один из анализов не найден"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": _("Один из анализов не найден")}, status=status.HTTP_404_NOT_FOUND)
 
     def _calculate_differences(self, data1, data2):
         """Вычислить разности между показателями"""
@@ -309,7 +309,7 @@ class MedicalDataViewSet(viewsets.ReadOnlyModelViewSet):
                         "trend": "up" if diff > 0 else "down" if diff < 0 else "stable",
                     }
                 except (ValueError, TypeError):
-                    differences[key] = {"note": "Невозможно сравнить значения"}
+                    differences[key] = {"note": _("Невозможно сравнить значения")}
 
         return differences
 
@@ -328,7 +328,7 @@ class SecurityLogViewSet(viewsets.ReadOnlyModelViewSet):
         user_id = request.query_params.get("user_id")
 
         if not user_id:
-            return Response({"error": "Не указан user_id"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": _("Не указан user_id")}, status=status.HTTP_400_BAD_REQUEST)
 
         logs = SecurityLog.objects.filter(user_id=user_id).order_by("-timestamp")
 
