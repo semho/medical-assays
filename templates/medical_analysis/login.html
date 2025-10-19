@@ -1,6 +1,6 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Вход - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Вход в систему" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-5">
@@ -9,7 +9,7 @@
             <div class="card-header bg-primary text-white text-center">
                 <h4 class="mb-0">
                     <i class="fas fa-sign-in-alt me-2"></i>
-                    Вход в систему
+                    {% trans "Вход в систему" %}
                 </h4>
             </div>
             <div class="card-body p-4">
@@ -17,7 +17,7 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="username" class="form-label">Логин</label>
+                        <label for="username" class="form-label">Username</label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="fas fa-user"></i>
@@ -28,12 +28,12 @@
                                    name="username" 
                                    required 
                                    autofocus
-                                   placeholder="Введите имя логин">
+                                   placeholder="{% trans 'Введите' %} username">
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Пароль</label>
+                        <label for="password" class="form-label">{% trans "Пароль" %}</label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="fas fa-lock"></i>
@@ -43,14 +43,14 @@
                                    id="password" 
                                    name="password" 
                                    required
-                                   placeholder="Введите пароль">
+                                   placeholder="{% trans 'Введите' %} {% trans 'password' %}">
                         </div>
                     </div>
                     
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-sign-in-alt me-2"></i>
-                            Войти
+                            {% trans "Войти" %}
                         </button>
                     </div>
                 </form>
@@ -58,10 +58,10 @@
                 <hr class="my-4">
                 
                 <div class="text-center">
-                    <p class="mb-0">Нет аккаунта?</p>
+                    <p class="mb-0">{% trans "Нет аккаунта" %}?</p>
                     <a href="{% url 'register' %}" class="btn btn-outline-secondary mt-2">
                         <i class="fas fa-user-plus me-2"></i>
-                        Зарегистрироваться
+                        {% trans  "Зарегистрироваться" %}
                     </a>
                 </div>
             </div>
@@ -69,7 +69,7 @@
         
         <div class="alert alert-info mt-3">
             <i class="fas fa-shield-alt me-2"></i>
-            <strong>Безопасность:</strong> Все ваши данные защищены end-to-end шифрованием
+            <strong>{% trans "Безопасность" %}:</strong> {% trans "Все ваши данные защищены end-to-end шифрованием" %}
         </div>
     </div>
 </div>

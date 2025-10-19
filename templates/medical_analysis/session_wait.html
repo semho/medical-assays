@@ -1,7 +1,8 @@
 {% extends 'medical_analysis/base.html' %}
+{% load i18n %}
 {% load static %}
 
-{% block title %}Обработка анализа{% endblock %}
+{% block title %}{% trans "Обработка анализа" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -38,7 +39,7 @@
         <div class="card shadow-lg">
             <div class="card-body text-center p-5">
                 <div id="processing-view">
-                    <h3 class="mb-4">Обрабатываем ваш анализ</h3>
+                    <h3 class="mb-4">{% trans "Обрабатываем ваш анализ" %}</h3>
 
                     <!-- НОВЫЙ ПРОГРЕСС-БАР -->
                     <div class="mb-4">
@@ -55,15 +56,15 @@
                         </div>
                     </div>
 
-                    <p class="text-primary" id="progress-message">загрузка файла...</p>
+                    <p class="text-primary" id="progress-message">{% trans "загрузка файла" %}...</p>
                     
                     <div class="file-info mt-4">
                         <h6 class="text-muted mb-2">
-                            <i class="fas fa-file-alt me-2"></i>Файл
+                            <i class="fas fa-file-alt me-2"></i>{% trans "Файл" %}
                         </h6>
                         <p class="mb-0"><strong>{{ session.original_filename }}</strong></p>
                         <small class="text-muted">
-                            Загружен: {{ session.upload_timestamp|date:"d.m.Y H:i" }}
+                            {% trans "Загружен" %}: {{ session.upload_timestamp|date:"d.m.Y H:i" }}
                         </small>
                     </div>
 
@@ -76,10 +77,10 @@
 
                 <div id="error-view" style="display: none;">
                     <i class="fas fa-exclamation-triangle text-danger fa-4x mb-4"></i>
-                    <h3 class="text-danger mb-3">Ошибка обработки</h3>
+                    <h3 class="text-danger mb-3">{% trans "Ошибка обработки" %}</h3>
                     <p class="text-muted" id="error-message"></p>
                     <a href="{% url 'upload_file' %}" class="btn btn-primary mt-3">
-                        <i class="fas fa-upload me-2"></i>Загрузить другой файл
+                        <i class="fas fa-upload me-2"></i>{% trans "Загрузить другой файл" %}
                     </a>
                 </div>
             </div>
@@ -88,7 +89,7 @@
         <div class="text-center mt-4">
             <small class="text-muted">
                 <i class="fas fa-shield-alt me-1"></i>
-                Ваши данные защищены end-to-end шифрованием
+                {% trans "Все ваши данные защищены end-to-end шифрованием" %}
             </small>
         </div>
     </div>
@@ -107,7 +108,7 @@ function checkStatus() {
     
     if (checksCount > maxChecks) {
         clearInterval(checkInterval);
-        showError('Превышено время ожидания обработки. Попробуйте загрузить файл снова.');
+        showError('{% trans "Превышено время ожидания обработки. Попробуйте загрузить файл снова" %}.');
         return;
     }
 
@@ -167,7 +168,7 @@ function checkStatus() {
             clearInterval(checkInterval);
             progressBar.classList.remove('progress-bar-animated');
             progressBar.classList.add('bg-danger');
-            showError(data.error_message || 'Произошла ошибка при обработке файла');
+            showError(data.error_message || '{% trans "Произошла ошибка при обработке файла" %}');
         }
     })
 }

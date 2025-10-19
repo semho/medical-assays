@@ -1,0 +1,744 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Medical Analyzer 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-18 19:19+0300\n"
+"PO-Revision-Date: 2025-10-18 19:30+0300\n"
+"Last-Translator: Medical Team\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: medical_analysis/api_views.py:59
+msgid "Неподдерживаемый язык"
+msgstr "Неподдерживаемый язык"
+
+#: medical_analysis/api_views.py:96
+msgid "Файл загружен и отправлен на обработку"
+msgstr "Файл загружен и отправлен на обработку"
+
+#: medical_analysis/api_views.py:105
+msgid "Внутренняя ошибка сервера"
+msgstr "Внутренняя ошибка сервера"
+
+#: medical_analysis/api_views.py:113
+msgid "Не указан session_id"
+msgstr "Не указан session_id"
+
+#: medical_analysis/api_views.py:134
+msgid "Сессия не найдена"
+msgstr "Сессия не найдена"
+
+#: medical_analysis/api_views.py:154
+msgid "Анализ еще не завершен"
+msgstr "Анализ еще не завершен"
+
+#: medical_analysis/api_views.py:164 medical_analysis/api_views.py:269
+#: medical_analysis/web_views.py:230 medical_analysis/web_views.py:329
+msgid "Ошибка расшифровки данных"
+msgstr "Ошибка расшифровки данных"
+
+#: medical_analysis/api_views.py:190
+msgid "Данные анализа не найдены"
+msgstr "Данные анализа не найдены"
+
+#: medical_analysis/api_views.py:194
+msgid "Ошибка получения данных"
+msgstr "Ошибка получения данных"
+
+#: medical_analysis/api_views.py:233
+msgid "Не указан тип анализа"
+msgstr "Не указан тип анализа"
+
+#: medical_analysis/api_views.py:259
+msgid "Не указаны ID анализов для сравнения"
+msgstr "Не указаны ID анализов для сравнения"
+
+#: medical_analysis/api_views.py:292 medical_analysis/web_views.py:452
+msgid "Один из анализов не найден"
+msgstr "Один из анализов не найден"
+
+#: medical_analysis/api_views.py:312
+msgid "Невозможно сравнить значения"
+msgstr "Невозможно сравнить значения"
+
+#: medical_analysis/api_views.py:331
+msgid "Не указан user_id"
+msgstr "Не указан user_id"
+
+# analysis types
+#: medical_analysis/utils/i18n_helpers.py:48
+#: templates/medical_analysis/home.html:108
+msgid "blood general"
+msgstr "Общий анализ крови"
+
+#: medical_analysis/utils/i18n_helpers.py:49
+#: templates/medical_analysis/home.html:112
+msgid "blood biochem"
+msgstr "Биохимический анализ"
+
+#: medical_analysis/utils/i18n_helpers.py:50
+#: templates/medical_analysis/home.html:120
+msgid "hormones"
+msgstr "Гормональные анализы"
+
+#: medical_analysis/utils/i18n_helpers.py:51
+msgid "other"
+msgstr "Другие анализы"
+
+# statuses
+#: medical_analysis/utils/i18n_helpers.py:67
+msgid "uploading"
+msgstr "Загрузка"
+
+#: medical_analysis/utils/i18n_helpers.py:68
+msgid "processing"
+msgstr "Обработка"
+
+#: medical_analysis/utils/i18n_helpers.py:69
+msgid "ocr"
+msgstr "Распознавание текста"
+
+#: medical_analysis/utils/i18n_helpers.py:70
+msgid "parsing"
+msgstr "Анализ данных"
+
+#: medical_analysis/utils/i18n_helpers.py:71
+msgid "completed"
+msgstr "Завершено"
+
+#: medical_analysis/utils/i18n_helpers.py:72
+msgid "error"
+msgstr "Ошибка"
+
+# laboratories
+#: medical_analysis/utils/i18n_helpers.py:88
+msgid "invitro"
+msgstr "Инвитро"
+
+#: medical_analysis/utils/i18n_helpers.py:89
+msgid "helix"
+msgstr "Хеликс"
+
+#: medical_analysis/utils/i18n_helpers.py:90
+msgid "kdl"
+msgstr "КДЛ"
+
+#: medical_analysis/utils/i18n_helpers.py:91
+msgid "gemotest"
+msgstr "Гемотест"
+
+#: medical_analysis/utils/i18n_helpers.py:92
+msgid "cmd"
+msgstr "ЦМД"
+
+#: medical_analysis/utils/i18n_helpers.py:93
+msgid "citilab"
+msgstr "Ситилаб"
+
+#: medical_analysis/utils/i18n_helpers.py:94
+msgid "unknown"
+msgstr "Неизвестно"
+
+# web views messages
+#: medical_analysis/web_views.py:42
+msgid "Аккаунт успешно создан!"
+msgstr "Аккаунт успешно создан!"
+
+#: medical_analysis/web_views.py:71
+msgid "Добро пожаловать!"
+msgstr "Добро пожаловать!"
+
+#: medical_analysis/web_views.py:92
+msgid "Вы вышли из системы"
+msgstr "Вы вышли из системы"
+
+#: medical_analysis/web_views.py:130
+msgid "Файл загружен и отправлен на обработку!"
+msgstr "Файл загружен и отправлен на обработку!"
+
+#: medical_analysis/web_views.py:135
+msgid "Файл успешно загружен"
+msgstr "Файл успешно загружен"
+
+#: medical_analysis/web_views.py:310
+msgid "Анализ успешно сохранён"
+msgstr "Анализ успешно сохранён"
+
+#: medical_analysis/web_views.py:322
+msgid "Анализ удалён"
+msgstr "Анализ удалён"
+
+#: medical_analysis/web_views.py:476
+msgid "Настройки обновлены"
+msgstr "Настройки обновлены"
+
+#: medical_analysis/web_views.py:484
+msgid "Профиль обновлен"
+msgstr "Профиль обновлен"
+
+#: medical_analysis/web_views.py:510
+msgid "Анализ удален"
+msgstr "Анализ удален"
+
+#: medical_analysis/web_views.py:614
+msgid "Неподдерживаемый формат"
+msgstr "Неподдерживаемый формат"
+
+#: medical_analysis/web_views.py:653
+msgid "Нет данных для построения графиков"
+msgstr "Нет данных для построения графиков"
+
+#: medical_analysis/web_views.py:790
+msgid "загрузка файла..."
+msgstr "загрузка файла..."
+
+#: medical_analysis/web_views.py:791
+msgid "обработка файла..."
+msgstr "обработка файла..."
+
+#: medical_analysis/web_views.py:792
+msgid "распознавание текста..."
+msgstr "распознавание текста..."
+
+#: medical_analysis/web_views.py:793
+msgid "анализ данных..."
+msgstr "анализ данных..."
+
+#: medical_analysis/web_views.py:794
+msgid "готово"
+msgstr "готово"
+
+#: medical_analysis/web_views.py:795
+msgid "ошибка обработки"
+msgstr "ошибка обработки"
+
+# navigation and common
+#: templates/medical_analysis/base.html:208
+#: templates/medical_analysis/home.html:4
+#: templates/medical_analysis/home.html:10
+msgid "medical analyzer"
+msgstr "МедАнализатор"
+
+#: templates/medical_analysis/base.html:230
+msgid "settings"
+msgstr "Настройки"
+
+#: templates/medical_analysis/base.html:233
+msgid "export data"
+msgstr "Экспорт данных"
+
+#: templates/medical_analysis/base.html:237
+msgid "logout"
+msgstr "Выйти"
+
+#: templates/medical_analysis/base.html:243
+#: templates/medical_analysis/home.html:37
+msgid "login"
+msgstr "Войти"
+
+#: templates/medical_analysis/base.html:246
+#: templates/medical_analysis/home.html:33
+msgid "register"
+msgstr "Регистрация"
+
+#: templates/medical_analysis/base.html:265
+#: templates/medical_analysis/home.html:22
+msgid "dashboard"
+msgstr "Панель управления"
+
+#: templates/medical_analysis/base.html:272
+#: templates/medical_analysis/home.html:26
+msgid "upload analysis"
+msgstr "Загрузить анализ"
+
+#: templates/medical_analysis/base.html:279
+msgid "my analyses"
+msgstr "Мои анализы"
+
+#: templates/medical_analysis/base.html:286
+msgid "trends"
+msgstr "Динамика"
+
+#: templates/medical_analysis/base.html:293
+msgid "compare"
+msgstr "Сравнить"
+
+#: templates/medical_analysis/base.html:300
+msgid "processing sessions"
+msgstr "Сессии обработки"
+
+# security messages
+#: templates/medical_analysis/base.html:331
+msgid "your data is encrypted and secure"
+msgstr "Ваши данные зашифрованы и защищены"
+
+#: templates/medical_analysis/base.html:333
+msgid "files are automatically deleted after 60 seconds"
+msgstr "Файлы автоматически удаляются через 60 секунд"
+
+# page titles
+#: templates/medical_analysis/home.html:4
+msgid "home page"
+msgstr "Главная страница"
+
+#: templates/medical_analysis/home.html:13
+msgid ""
+"\n"
+"        automated analysis of medical test results with maximum data "
+"protection\n"
+"        "
+msgstr ""
+"\n"
+"        Автоматизированный анализ результатов медицинских анализов с "
+"максимальной защитой данных\n"
+"        "
+
+#: templates/medical_analysis/home.html:51
+msgid "maximum security"
+msgstr "Максимальная безопасность"
+
+#: templates/medical_analysis/home.html:53
+msgid ""
+"\n"
+"                    end-to-end encryption and automatic file deletion\n"
+"                    "
+msgstr ""
+"\n"
+"                    Сквозное шифрование и автоматическое удаление файлов\n"
+"                    "
+
+#: templates/medical_analysis/home.html:67
+msgid "automatic processing"
+msgstr "Автоматическая обработка"
+
+#: templates/medical_analysis/home.html:69
+msgid ""
+"\n"
+"                    ocr and ai for data extraction from documents\n"
+"                    "
+msgstr ""
+"\n"
+"                    OCR и ИИ для извлечения данных из документов\n"
+"                    "
+
+#: templates/medical_analysis/home.html:83
+msgid "trend analysis"
+msgstr "Анализ динамики"
+
+#: templates/medical_analysis/home.html:85
+msgid ""
+"\n"
+"                    track changes in your health indicators over time\n"
+"                    "
+msgstr ""
+"\n"
+"                    Отслеживание изменений показателей здоровья во времени\n"
+"                    "
+
+#: templates/medical_analysis/home.html:99
+msgid "supported analysis types"
+msgstr "Типы анализов"
+
+#: templates/medical_analysis/home.html:127
+msgid ""
+"\n"
+"                    more analysis types coming soon\n"
+"                    "
+msgstr ""
+"\n"
+"                    Скоро появятся новые типы анализов\n"
+"                    "
+
+#: templates/medical_analysis/home.html:139
+msgid ""
+"\n"
+"        start tracking your health today\n"
+"        "
+msgstr ""
+"\n"
+"        Начните отслеживать своё здоровье сегодня\n"
+"        "
+
+#: templates/medical_analysis/home.html:144
+msgid ""
+"\n"
+"        registration takes less than a minute\n"
+"        "
+msgstr ""
+"\n"
+"        Регистрация занимает меньше минуты\n"
+"        "
+
+#: templates/medical_analysis/home.html:151
+msgid "create free account"
+msgstr "Создать бесплатный аккаунт"
+
+#: templates/medical_analysis/home.html:161
+msgid "security notice"
+msgstr "Безопасность"
+
+#: templates/medical_analysis/home.html:163
+msgid ""
+"\n"
+"                all files are automatically deleted after 60 seconds.\n"
+"                results are stored encrypted with your personal key.\n"
+"                "
+msgstr ""
+"\n"
+"                Все файлы автоматически удаляются через 60 секунд.\n"
+"                Результаты хранятся в зашифрованном виде с вашим личным ключом.\n"
+"                "
+
+msgid "Вход в систему"
+msgstr "Вход в систему"
+
+msgid "Пароль"
+msgstr "Пароль"
+
+msgid "Введите"
+msgstr "Введите"
+
+msgid "Войти"
+msgstr "Войти"
+
+msgid "Нет аккаунта"
+msgstr "Нет аккаунта"
+
+msgid "Зарегистрироваться"
+msgstr "Зарегистрироваться"
+
+msgid "Все ваши данные защищены end-to-end шифрованием"
+msgstr "Все ваши данные защищены end-to-end шифрованием"
+
+msgid "Всего анализов"
+msgstr "Всего анализов"
+
+msgid "За месяц"
+msgstr "За месяц"
+
+msgid "Обработка"
+msgstr "Обработка"
+
+msgid "Активна"
+msgstr "Активна"
+
+msgid "Просмотр"
+msgstr "Просмотр"
+
+msgid "Сравнить анализы"
+msgstr "Сравнить анализы"
+
+msgid "Экспорт данных"
+msgstr "Экспорт данных"
+
+msgid "Настройки"
+msgstr "Настройки"
+
+msgid "Безопасность данных"
+msgstr "Безопасность данных"
+
+msgid "Все ваши медицинские данные зашифрованы индивидуальным ключом. Оригинальные файлы автоматически удаляются через 60 секунд после обработки."
+msgstr "Все ваши медицинские данные зашифрованы индивидуальным ключом. Оригинальные файлы автоматически удаляются через 60 секунд после обработки."
+
+msgid "Соответствует"
+msgstr "Соответствует"
+
+msgid "Последние анализы"
+msgstr "Последние анализы"
+msgid "Смотреть все"
+msgstr "Смотреть все"
+msgid "Дата"
+msgstr "Дата"
+msgid "Тип анализа"
+msgstr "Тип анализа"
+msgid "Статус"
+msgstr "Статус"
+msgid "Действия"
+msgstr "Действия"
+msgid "ОАК"
+msgstr "ОАК"
+msgid "Биохимия"
+msgstr "Биохимия"
+msgid "Гормоны"
+msgstr "Гормоны"
+msgid "Готов"
+msgstr "Готов"
+msgid "Анализов пока нет"
+msgstr "Анализов пока нет"
+msgid "Загрузите первый анализ, чтобы начать отслеживание показателей здоровья"
+msgstr "Загрузите первый анализ, чтобы начать отслеживание показателей здоровья"
+msgid "Загрузить анализ"
+msgstr "Загрузить анализ"
+msgid "Обработка файлов"
+msgstr "Обработка файлов"
+msgid "Нет активных задач"
+msgstr "Нет активных задач"
+msgid "Все файлы обработаны"
+msgstr "Все файлы обработаны"
+msgid "Быстрые действия"
+msgstr "Быстрые действия"
+msgid "Новый анализ"
+msgstr "Новый анализ"
+
+msgid "Загрузка анализа"
+msgstr "Загрузка анализа"
+msgid "Инструкции по загрузке"
+msgstr "Инструкции по загрузке"
+msgid "Поддерживаемые форматы"
+msgstr "Поддерживаемые форматы"
+msgid "Типы анализов"
+msgstr "Типы анализов"
+msgid "документы"
+msgstr "документы"
+msgid "Изображения"
+msgstr "Изображения"
+msgid "Общий анализ крови"
+msgstr "Общий анализ крови"
+msgid "Биохимический анализ"
+msgstr "Биохимический анализ"
+msgid "Гормональные анализы"
+msgstr "Гормональные анализы"
+msgid "Загрузить файл анализа"
+msgstr "Загрузить файл анализа"
+msgid "Перетащите файл сюда или нажмите для выбора"
+msgstr "Перетащите файл сюда или нажмите для выбора"
+msgid "Максимальный размер файла"
+msgstr "Максимальный размер файла"
+msgid "Загрузить и обработать"
+msgstr "Загрузить и обработать"
+msgid "Последние загрузки"
+msgstr "Последние загрузки"
+msgid "Файл"
+msgstr "Файл"
+msgid "Время"
+msgstr "Время"
+msgid "Назад к панели"
+msgstr "Назад к панели"
+msgid "МБ"
+msgstr "МБ"
+msgid "Файлы автоматически удаляются через 60 секунд после обработки. Результаты сохраняются в зашифрованном виде"
+msgstr "Файлы автоматически удаляются через 60 секунд после обработки. Результаты сохраняются в зашифрованном виде"
+
+msgid "Ошибка"
+msgstr "Ошибка"
+msgid "Нет загрузок"
+msgstr "Нет загрузок"
+
+msgid "Результаты анализов"
+msgstr "Результаты анализов"
+msgid "Применить"
+msgstr "Применить"
+msgid "Дата от"
+msgstr "Дата от"
+msgid "Дата до"
+msgstr "Дата до"
+msgid "Сбросить"
+msgstr "Сбросить"
+msgid "Загружен"
+msgstr "Загружен"
+msgid "Данные зашифрованы"
+msgstr "Данные зашифрованы"
+msgid "Подробнее"
+msgstr "Подробнее"
+msgid "Удалить"
+msgstr "Удалить"
+msgid "Удалить этот анализ"
+msgstr "Удалить этот анализ"
+msgid "Предыдущая"
+msgstr "Предыдущая"
+msgid "Страница"
+msgstr "Страница"
+msgid "из"
+msgstr "из"
+msgid "Следующая"
+msgstr "Следующая"
+msgid "Результатов не найдено"
+msgstr "Результатов не найдено"
+msgid "Загрузите первый анализ или измените фильтры"
+msgstr "Загрузите первый анализ или измените фильтры"
+
+msgid "Все типы"
+msgstr "Все типы"
+
+msgid "date placeholder"
+msgstr "дд.мм.гггг"
+
+msgid "Динамика показателей"
+msgstr "Динамика показателей"
+msgid "Фильтр по типу анализа"
+msgstr "Фильтр по типу анализа"
+msgid "Графиков в ряд"
+msgstr "Графиков в ряд"
+msgid "Отображаются все доступные параметры"
+msgstr "Отображаются все доступные параметры"
+
+msgid "Фильтр"
+msgstr "Фильтр"
+
+msgid "Нет параметров для выбранного типа анализа"
+msgstr "Нет параметров для выбранного типа анализа"
+msgid "параметров"
+msgstr "параметров"
+msgid "Ошибка загрузки данных"
+msgstr "Ошибка загрузки данных"
+
+msgid "Сравнение"
+msgstr "Сравнение"
+msgid "Сравнение анализов"
+msgstr "Сравнение анализов"
+msgid "Выберите анализы"
+msgstr "Выберите анализы"
+msgid "Первый анализ"
+msgstr "Первый анализ"
+msgid "Выберите"
+msgstr "Выберите"
+msgid "Второй анализ"
+msgstr "Второй анализ"
+
+msgid "Результат сравнения"
+msgstr "Результат сравнения"
+msgid "Анализ"
+msgstr "Анализ"
+msgid "Параметр"
+msgstr "Параметр"
+msgid "Изменение"
+msgstr "Изменение"
+msgid "Тренд"
+msgstr "Тренд"
+msgid "Нет данных для сравнения"
+msgstr "Нет данных для сравнения"
+msgid "Назад к выбору анализов"
+msgstr "Назад к выбору анализов"
+
+msgid "Обработка анализа"
+msgstr "Обработка анализа"
+msgid "Обрабатываем ваш анализ"
+msgstr "Обрабатываем ваш анализ"
+msgid "Загрузить другой файл"
+msgstr "Загрузить другой файл"
+msgid "Превышено время ожидания обработки. Попробуйте загрузить файл снова"
+msgstr "Превышено время ожидания обработки. Попробуйте загрузить файл снова"
+
+msgid "Загрузить новый файл"
+msgstr "Загрузить новый файл"
+msgid "Фильтр по статусу"
+msgstr "Фильтр по статусу"
+msgid "Все статусы"
+msgstr "Все статусы"
+msgid "Дата загрузки"
+msgstr "Дата загрузки"
+msgid "Результат"
+msgstr "Результат"
+msgid "Сессий пока нет"
+msgstr "Сессий пока нет"
+msgid "Загрузите первый файл для начала обработки"
+msgstr "Загрузите первый файл для начала обработки"
+
+msgid "Настройки профиля"
+msgstr "Настройки профиля"
+msgid "Личные данные"
+msgstr "Личные данные"
+msgid "Имя"
+msgstr "Имя"
+msgid "Фамилия"
+msgstr "Фамилия"
+msgid "Сохранить изменения"
+msgstr "Сохранить изменения"
+msgid "Язык интерфейса"
+msgstr "Язык интерфейса"
+msgid "Информация об аккаунте"
+msgstr "Информация об аккаунте"
+msgid "Дата регистрации"
+msgstr "Дата регистрации"
+msgid "Последний вход"
+msgstr "Последний вход"
+msgid "Индивидуальное шифрование активно"
+msgstr "Индивидуальное шифрование активно"
+msgid "Автоудаление файлов"
+msgstr "Автоудаление файлов"
+msgid "совместимость"
+msgstr "совместимость"
+msgid "сек"
+msgstr "сек"
+
+msgid "Будет использоваться для входа"
+msgstr "Будет использоваться для входа"
+msgid "Подтвердите пароль"
+msgstr "Подтвердите пароль"
+msgid "Уже есть аккаунт"
+msgstr "Уже есть аккаунт"
+
+msgid "Подтверждение анализа"
+msgstr "Подтверждение анализа"
+msgid "Детали анализа"
+msgstr "Детали анализа"
+msgid "Подтвердите распознанные данные"
+msgstr "Подтвердите распознанные данные"
+msgid "Дата анализа"
+msgstr "Дата анализа"
+msgid "Лаборатория"
+msgstr "Лаборатория"
+msgid "Подтверждено"
+msgstr "Подтверждено"
+msgid "Требует проверки"
+msgstr "Требует проверки"
+msgid "Проверьте данные"
+msgstr "Проверьте данные"
+msgid "Убедитесь, что все значения, единицы измерения и референсные диапазоны распознаны корректно. При необходимости внесите исправления."
+msgstr "Убедитесь, что все значения, единицы измерения и референсные диапазоны распознаны корректно. При необходимости внесите исправления."
+msgid "Значение"
+msgstr "Значение"
+msgid "Единицы"
+msgstr "Единицы"
+msgid "Референс"
+msgstr "Референс"
+msgid "Введите число или значение с оператором"
+msgstr "Введите число или значение с оператором"
+msgid "мин - макс"
+msgstr "мин - макс"
+msgid "Норма"
+msgstr "Норма"
+msgid "Повышен"
+msgstr "Повышен"
+msgid "Понижен"
+msgstr "Понижен"
+msgid "Удалить параметр"
+msgstr "Удалить параметр"
+msgid "Назад к списку"
+msgstr "Назад к списку"
+msgid "Подтвердить и сохранить"
+msgstr "Подтвердить и сохранить"
+msgid "Удалить анализ"
+msgstr "Удалить анализ"
+msgid "Информация об обработке"
+msgstr "Информация об обработке"
+msgid "Исходный текст"
+msgstr "Исходный текст"
+msgid "Проверьте введенные значения. Допустимые форматы"
+msgstr "Проверьте введенные значения. Допустимые форматы"
+msgid "Вы уверены, что все данные проверены и корректны"
+msgstr "Вы уверены, что все данные проверены и корректны"
+msgid "Удалить этот параметр"
+msgstr "Удалить этот параметр"
+
+msgid "Показатели анализа"
+msgstr "Показатели анализа"
+msgid "Распознанный текст"
+msgstr "Распознанный текст"
+msgid "Метод"
+msgstr "Метод"
+msgid "Найдено параметров"
+msgstr "Найдено параметров"
+msgid "Обработано"
+msgstr "Обработано"

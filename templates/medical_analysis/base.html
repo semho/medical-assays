@@ -1,5 +1,6 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -204,7 +205,7 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-heartbeat me-2"></i>
-                МедАнализатор
+                {% trans "medical analyzer" %}
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -212,32 +213,37 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- language switcher -->
+                    <li class="nav-item me-2">
+                        {% include 'includes/language_switcher.html' %}
+                    </li>
+
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle me-1"></i>
                                 {{ user.first_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'profile_settings' %}">
-                                    <i class="fas fa-cog me-2"></i>Настройки
+                                    <i class="fas fa-cog me-2"></i>{% trans "settings" %}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{% url 'export_data' %}">
-                                    <i class="fas fa-download me-2"></i>Экспорт данных
+                                    <i class="fas fa-download me-2"></i>{% trans "export data" %}
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Выйти
+                                    <i class="fas fa-sign-out-alt me-2"></i>{% trans "logout" %}
                                 </a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">Войти</a>
+                            <a class="nav-link" href="{% url 'login' %}">{% trans "login" %}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
+                            <a class="nav-link" href="{% url 'register' %}">{% trans "register" %}</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -249,49 +255,49 @@
         <div class="row">
             {% if user.is_authenticated %}
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+            <nav class="col-md-2 d-md-block sidebar collapse">
                 <div class="position-sticky pt-3">
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                                href="{% url 'dashboard' %}">
                                 <i class="fas fa-tachometer-alt me-2"></i>
-                                Панель управления
+                                {% trans "dashboard" %}
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'upload_file' %}active{% endif %}"
                                href="{% url 'upload_file' %}">
-                                <i class="fas fa-cloud-upload-alt me-2"></i>
-                                Загрузить анализ
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'analysis_sessions' %}active{% endif %}"
-                               href="{% url 'analysis_sessions' %}">
-                                <i class="fas fa-list-alt me-2"></i>
-                                Сессии обработки
+                                <i class="fas fa-upload me-2"></i>
+                                {% trans "upload analysis" %}
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'analysis_results' %}active{% endif %}"
                                href="{% url 'analysis_results' %}">
-                                <i class="fas fa-chart-bar me-2"></i>
-                                Результаты анализов
+                                <i class="fas fa-list-alt me-2"></i>
+                                {% trans "my analyses" %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'analysis_trends' %}active{% endif %}"
+                               href="{% url 'analysis_trends' %}">
+                                <i class="fas fa-chart-line me-2"></i>
+                                {% trans "trends" %}
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'compare_analyses' %}active{% endif %}"
                                href="{% url 'compare_analyses' %}">
                                 <i class="fas fa-balance-scale me-2"></i>
-                                Сравнить анализы
+                                {% trans "compare" %}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link  {% if request.resolver_match.url_name == 'analysis_trends' %}active{% endif %}"
-                               href="{% url 'analysis_trends' %}">
-                                <i class="fas fa-chart-area me-2"></i>
-                                Динамика показателей
+                        <li class="nav-item mt-3">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'analysis_sessions' %}active{% endif %}"
+                               href="{% url 'analysis_sessions' %}">
+                                <i class="fas fa-clock me-2"></i>
+                                {% trans "processing sessions" %}
                             </a>
                         </li>
                     </ul>
@@ -300,128 +306,36 @@
             {% endif %}
 
             <!-- Main content -->
-            <main class="{% if user.is_authenticated %}col-md-9 ms-sm-auto col-lg-10 px-md-4{% else %}col-12{% endif %}">
+            <main class="{% if user.is_authenticated %}col-md-10 ms-sm-auto{% else %}col-12{% endif %} main-content">
                 <!-- Messages -->
                 {% if messages %}
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                    </div>
+                    {% endfor %}
                 {% endif %}
 
-                <div class="main-content">
-                    {% block content %}{% endblock %}
-                </div>
+                <!-- Page content -->
+                {% block content %}{% endblock %}
             </main>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="bg-light py-4 mt-5">
+    <footer class="bg-light text-center text-muted py-3 mt-5">
         <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0">&copy; 2025 МедАнализатор. Все права защищены.</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <small class="text-muted">
-                        <i class="fas fa-shield-alt me-1"></i>
-                        Ваши данные защищены end-to-end шифрованием
-                    </small>
-                </div>
-            </div>
+            <p class="mb-0">
+                <i class="fas fa-shield-alt me-2"></i>
+                {% trans "your data is encrypted and secure" %}
+            </p>
+            <small>{% trans "files are automatically deleted after 60 seconds" %}</small>
         </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Custom JavaScript -->
-    <script>
-        // HTMX конфигурация
-        document.addEventListener('DOMContentLoaded', function() {
-            // Обновление статуса сессий каждые 5 секунд
-            const statusElements = document.querySelectorAll('[data-auto-refresh]');
-            statusElements.forEach(element => {
-                setInterval(() => {
-                    htmx.trigger(element, 'refresh');
-                }, 5000);
-            });
-        });
-
-        // Drag & Drop для загрузки файлов
-        function initDragAndDrop() {
-            const uploadArea = document.querySelector('.upload-area');
-            const fileInput = document.querySelector('#file-input');
-
-            if (uploadArea && fileInput) {
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, preventDefaults, false);
-                });
-
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, highlight, false);
-                });
-
-                ['dragleave', 'drop'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, unhighlight, false);
-                });
-
-                uploadArea.addEventListener('drop', handleDrop, false);
-
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                function highlight(e) {
-                    uploadArea.classList.add('dragover');
-                }
-
-                function unhighlight(e) {
-                    uploadArea.classList.remove('dragover');
-                }
-
-                function handleDrop(e) {
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        fileInput.files = files;
-                        const event = new Event('change', { bubbles: true });
-                        fileInput.dispatchEvent(event);
-                    }
-                }
-            }
-        }
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', initDragAndDrop);
-
-        // Переинициализация после HTMX запросов
-        document.addEventListener('htmx:afterSwap', initDragAndDrop);
-
-        // Анимация для карточек
-        function animateCards() {
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.classList.add('fade-in');
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', animateCards);
-
-        // Всплывающие подсказки
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

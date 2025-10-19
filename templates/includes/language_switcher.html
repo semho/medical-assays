@@ -1,10 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% load i18n %}
+
+<div class="dropdown">
+    <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+            type="button"
+            id="languageDropdown"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <i class="fas fa-globe me-1"></i>
+        {% if LANGUAGE_CODE == 'ru' %}
+            RU
+        {% else %}
+            EN
+        {% endif %}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+        <li>
+            <form method="post" action="{% url 'set_language' %}" class="px-3 py-2">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <input type="hidden" name="language" value="ru">
+                <button type="submit" class="dropdown-item {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">
+                    <i class="fas fa-check me-2 {% if LANGUAGE_CODE != 'ru' %}invisible{% endif %}"></i>
+                    Русский
+                </button>
+            </form>
+        </li>
+        <li>
+            <form method="post" action="{% url 'set_language' %}" class="px-3 py-2">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <input type="hidden" name="language" value="en">
+                <button type="submit" class="dropdown-item {% if LANGUAGE_CODE == 'en' %}active{% endif %}">
+                    <i class="fas fa-check me-2 {% if LANGUAGE_CODE != 'en' %}invisible{% endif %}"></i>
+                    English
+                </button>
+            </form>
+        </li>
+    </ul>
+</div>

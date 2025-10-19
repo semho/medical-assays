@@ -1,11 +1,12 @@
+{% load i18n %}
 <div class="session-status-update">
     {% if session.processing_status == 'uploading' %}
-        <span class="badge bg-warning">Загрузка...</span>
+        <span class="badge bg-warning">{% trans "Загрузка" %}...</span>
     {% elif session.processing_status == 'processing' %}
-        <span class="badge bg-info">Обработка...</span>
+        <span class="badge bg-info">{% trans "Обработка" %}...</span>
     {% elif session.processing_status == 'completed' %}
-        <span class="badge bg-success">Готово</span>
+        <span class="badge bg-success">{% trans "Готово" %}</span>
     {% elif session.processing_status == 'error' %}
-        <span class="badge bg-danger">Ошибка</span>
+        <span class="badge bg-danger">{% trans "Ошибка" %}</span>
     {% endif %}
 </div>

@@ -1,26 +1,26 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Сравнение - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Сравнение" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="fas fa-balance-scale me-2"></i>Сравнение анализов</h1>
+    <h1 class="h2"><i class="fas fa-balance-scale me-2"></i>{% trans "Сравнение анализов" %}</h1>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Выберите анализы</h5>
+                <h5 class="mb-0">{% trans "Выберите анализы" %}</h5>
             </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     
                     <div class="mb-4">
-                        <label for="analysis1_id" class="form-label">Первый анализ</label>
+                        <label for="analysis1_id" class="form-label">{% trans "Первый анализ" %}</label>
                         <select class="form-select" id="analysis1_id" name="analysis1_id" required>
-                            <option value="">Выберите...</option>
+                            <option value="">{% trans "Выберите" %}...</option>
                             {% for analysis in available_analyses %}
                                 <option value="{{ analysis.id }}">
                                     {{ analysis.get_analysis_type_display }} - {{ analysis.analysis_date|date:"d.m.Y" }}
@@ -30,9 +30,9 @@
                     </div>
                     
                     <div class="mb-4">
-                        <label for="analysis2_id" class="form-label">Второй анализ</label>
+                        <label for="analysis2_id" class="form-label">{% trans "Второй анализ" %}</label>
                         <select class="form-select" id="analysis2_id" name="analysis2_id" required>
-                            <option value="">Выберите...</option>
+                            <option value="">{% trans "Выберите" %}...</option>
                             {% for analysis in available_analyses %}
                                 <option value="{{ analysis.id }}">
                                     {{ analysis.get_analysis_type_display }} - {{ analysis.analysis_date|date:"d.m.Y" }}
@@ -42,7 +42,7 @@
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Сравнить</button>
+                        <button type="submit" class="btn btn-primary btn-lg">{% trans "compare" %}</button>
                     </div>
                 </form>
             </div>

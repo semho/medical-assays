@@ -7,6 +7,8 @@ from cryptography.fernet import Fernet
 import base64
 
 from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType, GptModel
+from medical_analysis.utils.i18n_helpers import get_analysis_type_display
+
 logger = logging.getLogger(__name__)
 
 class UserProfile(models.Model):
@@ -54,6 +56,8 @@ class AnalysisSession(models.Model):
     def __str__(self):
         return f"Сессия {self.pk} - {self.user.username} - {self.processing_status}"
 
+    def get_analysis_type_display(self):
+        return get_analysis_type_display(self.analysis_type)
 
 class MedicalData(models.Model):
     """Зашифрованные медицинские данные"""
@@ -101,6 +105,9 @@ class MedicalData(models.Model):
         except Exception as e:
             print(f"Ошибка расшифровки: {e}")
             return None
+
+    def get_analysis_type_display(self):
+        return get_analysis_type_display(self.analysis_type)
 
 
 class SecurityLog(models.Model):

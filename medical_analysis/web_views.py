@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-
+from django.utils.translation import gettext as _
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -12,12 +12,13 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
-from .constants import PARAMETER_NAMES_RU, PARAMETER_TYPE_MAP, get_display_name
+from .constants import PARAMETER_TYPE_MAP
 from .enums import Status, AnalysisType
 from .models import AnalysisSession, MedicalData, UserProfile, SecurityLog
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from .file_processor import FileUploadHandler
-from .utils import get_client_ip, get_all_units_list, parse_value_with_operator
+from medical_analysis.utils.core import get_client_ip, get_all_units_list, parse_value_with_operator
+from .utils.i18n_helpers import get_parameter_display_name, get_analysis_type_display
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ def register_view(request):
         if serializer.is_valid():
             user = serializer.save()
             login(request, user)
-            messages.success(request, "Аккаунт успешно создан!")
+            messages.success(request, _("Аккаунт успешно создан!"))
             return redirect("dashboard")
         else:
             for field, errors in serializer.errors.items():
@@ -64,11 +65,11 @@ def login_view(request):
             SecurityLog.objects.create(
                 user=user,
                 action="USER_LOGIN",
-                details=f"Пользователь {user.username} вошел в систему",
+                details=_(f"Пользователь {user.username} вошел в систему"),
                 ip_address=get_client_ip(request),
             )
 
-            messages.success(request, "Добро пожаловать!")
+            messages.success(request, _("Добро пожаловать!"))
             return redirect("dashboard")
         else:
             for field, errors in serializer.errors.items():
@@ -84,12 +85,12 @@ def logout_view(request):
         SecurityLog.objects.create(
             user=request.user,
             action="USER_LOGOUT",
-            details=f"Пользователь {request.user.username} вышел из системы",
+            details=_(f"Пользователь {request.user.username} вышел из системы"),
             ip_address=get_client_ip(request),
         )
 
     logout(request)
-    messages.info(request, "Вы вышли из системы")
+    messages.info(request, _("Вы вышли из системы"))
     return redirect("home")
 
 
@@ -127,12 +128,12 @@ def upload_file(request):
             upload_handler = FileUploadHandler()
             session = upload_handler.handle_upload(request.FILES["file"], request.user)
 
-            messages.success(request, "Файл загружен и отправлен на обработку!")
+            messages.success(request, _("Файл загружен и отправлен на обработку!"))
 
             # Если это HTMX запрос, возвращаем статус
             if request.headers.get("HX-Request"):
                 return JsonResponse(
-                    {"success": True, "session_id": session.pk, "message": "Файл успешно загружен"},
+                    {"success": True, "session_id": session.pk, "message": _("Файл успешно загружен")},
                     json_dumps_params={"ensure_ascii": False},
                 )
 
@@ -140,7 +141,7 @@ def upload_file(request):
 
         except Exception as e:
             error_msg = str(e)
-            messages.error(request, f"Ошибка загрузки файла: {error_msg}")
+            messages.error(request, _(f"Ошибка загрузки файла: {error_msg}"))
 
             if request.headers.get("HX-Request"):
                 return JsonResponse({"success": False, "error": error_msg}, json_dumps_params={"ensure_ascii": False})
@@ -163,10 +164,13 @@ def analysis_sessions(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    # Обработка choices с переводом
+    status_choices = [(choice[0], get_analysis_type_display(choice[0])) for choice in Status.choices]
+
     context = {
         "page_obj": page_obj,
         "status_filter": status_filter,
-        "status_choices": Status.choices,
+        "status_choices": status_choices,
     }
 
     return render(request, "medical_analysis/sessions.html", context)
@@ -204,12 +208,16 @@ def analysis_results(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    # Обработка choices с переводом
+    analysis_types = [(choice[0], get_analysis_type_display(choice[0])) for choice in AnalysisType.choices]
+
     context = {
         "page_obj": page_obj,
         "type_filter": type_filter,
         "date_from": date_from,
         "date_to": date_to,
-        "analysis_types": AnalysisType.choices,
+        "analysis_types": analysis_types,
+        "date_placeholder": _("date placeholder"),
     }
 
     return render(request, "medical_analysis/results.html", context)
@@ -227,7 +235,7 @@ def analysis_detail(request, analysis_id):
             # Собираем обновленные данные от пользователя
             decrypted = medical_data.decrypt_data()
             if not decrypted:
-                messages.error(request, "Ошибка расшифровки данных")
+                messages.error(request, _("Ошибка расшифровки данных"))
                 return redirect("analysis_results")
 
             updated_parsed_data = {}
@@ -244,8 +252,8 @@ def analysis_detail(request, analysis_id):
                         value, operator = parse_value_with_operator(value_str)
 
                         if value is None:
-                            logger.warning(f"Не удалось распарсить значение: {value_str}")
-                            messages.warning(request, f"Ошибка в параметре {param_key}")
+                            logger.warning(_(f"Не удалось распарсить значение: {value_str}"))
+                            messages.warning(request, _(f"Ошибка в параметре {param_key}"))
                             continue
 
                         unit = request.POST.get(f"unit_{param_key}", "")
@@ -265,8 +273,8 @@ def analysis_detail(request, analysis_id):
 
                         updated_parsed_data[param_key] = param_data
                     except (ValueError, TypeError) as e:
-                        logger.error(f"Ошибка парсинга {param_key}: {e}")
-                        messages.warning(request, f"Ошибка в параметре {param_key}: {e}")
+                        logger.error(_(f"Ошибка парсинга {param_key}: {e}"))
+                        messages.warning(request, _(f"Ошибка в параметре {param_key}: {e}"))
                         continue
 
 
@@ -303,11 +311,11 @@ def analysis_detail(request, analysis_id):
             SecurityLog.objects.create(
                 user=request.user,
                 action="ANALYSIS_CONFIRMED",
-                details=f"Пользователь подтвердил анализ {analysis_id}",
+                details=_(f"Пользователь подтвердил анализ {analysis_id}"),
                 ip_address=get_client_ip(request),
             )
 
-            messages.success(request, "Анализ успешно сохранён")
+            messages.success(request, _("Анализ успешно сохранён"))
             return redirect("analysis_results")
 
         elif action == "delete":
@@ -315,18 +323,18 @@ def analysis_detail(request, analysis_id):
             SecurityLog.objects.create(
                 user=request.user,
                 action="ANALYSIS_DELETED",
-                details=f"Удалён анализ {analysis_id}",
+                details=_(f"Удалён анализ {analysis_id}"),
                 ip_address=get_client_ip(request),
             )
             medical_data.delete()
-            messages.info(request, "Анализ удалён")
+            messages.info(request, _("Анализ удалён"))
             return redirect("dashboard")
 
     # GET запрос - показываем форму
     decrypted_data = medical_data.decrypt_data()
 
     if not decrypted_data:
-        messages.error(request, "Ошибка расшифровки данных")
+        messages.error(request, _("Ошибка расшифровки данных"))
         return redirect("analysis_results")
 
     grouped_data = decrypted_data.get('grouped_data')
@@ -368,7 +376,7 @@ def analysis_detail(request, analysis_id):
             else:
                 display_value = value
 
-        display_name = get_display_name(param_key, unit)
+        display_name = get_parameter_display_name(param_key, unit)
         parameters_list.append({
             "key": param_key,
             "name": display_name,
@@ -395,7 +403,7 @@ def analysis_detail(request, analysis_id):
             if count == max_count:
                 # Обновляем тип только если он отличается
                 if medical_data.analysis_type != type_name:
-                    logger.info(f"Корректировка типа: {medical_data.analysis_type} → {type_name}")
+                    logger.info(_(f"Корректировка типа: {medical_data.analysis_type} → {type_name}"))
                     medical_data.analysis_type = type_name
                     medical_data.save(update_fields=['analysis_type'])
                 break
@@ -404,7 +412,7 @@ def analysis_detail(request, analysis_id):
     SecurityLog.objects.create(
         user=request.user,
         action="DATA_VIEW",
-        details=f"Просмотр анализа {analysis_id}",
+        details=_(f"Просмотр анализа {analysis_id}"),
         ip_address=get_client_ip(request),
     )
 
@@ -449,7 +457,7 @@ def compare_analyses(request):
                     return render(request, "medical_analysis/comparison_result.html", context)
 
             except MedicalData.DoesNotExist:
-                messages.error(request, "Один из анализов не найден")
+                messages.error(request, _("Один из анализов не найден"))
 
     # Получаем доступные анализы для сравнения
     available_analyses = MedicalData.objects.filter(user=request.user).order_by("-analysis_date")
@@ -473,7 +481,7 @@ def profile_settings(request):
             if language in ["ru", "en"]:
                 profile.language_preference = language
                 profile.save()
-                messages.success(request, "Настройки обновлены")
+                messages.success(request, _("Настройки обновлены"))
 
         # Обновление профиля пользователя
         if "first_name" in request.POST:
@@ -481,7 +489,7 @@ def profile_settings(request):
             request.user.last_name = request.POST.get("last_name", "")
             request.user.email = request.POST.get("email", "")
             request.user.save()
-            messages.success(request, "Профиль обновлен")
+            messages.success(request, _("Профиль обновлен"))
 
         return redirect("profile_settings")
 
@@ -507,7 +515,7 @@ def delete_analysis(request, analysis_id):
     )
 
     medical_data.delete()
-    messages.success(request, "Анализ удален")
+    messages.success(request, _("Анализ удален"))
 
     if request.headers.get("HX-Request"):
         return HttpResponse(status=204)  # No content для HTMX
@@ -540,7 +548,7 @@ def calculate_differences(data1, data2):
 
         # Получаем русское название параметра
         # param_name = PARAMETER_NAMES_RU.get(key, key.replace("_", " ").title())
-        display_name = get_display_name(key, unit1 or unit2)
+        display_name = get_parameter_display_name(key, unit1 or unit2)
         if val1 is not None and val2 is not None:
             try:
                 val1_float = float(val1)
@@ -611,7 +619,7 @@ def export_data(request):
         return response
 
     # Пока поддерживаем только JSON
-    return JsonResponse({"error": "Неподдерживаемый формат"}, status=400)
+    return JsonResponse({"error": _("Неподдерживаемый формат")}, status=400)
 
 
 @login_required
@@ -628,12 +636,16 @@ def analysis_trends(request):
     # Получаем доступные типы анализов у пользователя
     available_types = MedicalData.objects.filter(user=request.user).values_list("analysis_type", flat=True).distinct()
 
+    # Обработка choices с переводом
+    analysis_types = [(choice[0], get_analysis_type_display(choice[0])) for choice in AnalysisType.choices]
+
     # Создаём словарь типов для JS
-    analysis_type_names = {choice[0]: choice[1] for choice in AnalysisType.choices}
+    analysis_type_names = {choice[0]: choice[1] for choice in analysis_types}
+
 
     context = {
         "available_types": available_types,
-        "analysis_types": AnalysisType.choices,
+        "analysis_types": analysis_types,
         "analysis_type_names_json": json.dumps(analysis_type_names, ensure_ascii=False),
     }
 
@@ -650,7 +662,7 @@ def trends_data(request, analysis_type=None):
     analyses = MedicalData.objects.filter(user=request.user).order_by("analysis_date", "created_at")
 
     if analyses.count() < 1:
-        return JsonResponse({"error": "Нет данных для построения графиков"}, status=400)
+        return JsonResponse({"error": _("Нет данных для построения графиков")}, status=400)
 
     # Структура для хранения данных по параметрам
     parameters_data = defaultdict(
@@ -736,7 +748,7 @@ def trends_data(request, analysis_type=None):
 
             # Русское название
             if not parameters_data[param_key]["name"]:
-                parameters_data[param_key]["name"] = get_display_name(param_key, unit)
+                parameters_data[param_key]["name"] = get_parameter_display_name(param_key, unit)
                 # parameters_data[param_key]["name"] = PARAMETER_NAMES_RU.get(
                 #     param_key, param_key.replace("_", " ").title()
                 # )
@@ -787,12 +799,12 @@ def check_session_status(request, session_id):
 
     # примерные этапы обработки для расчета прогресса
     stages = {
-        "uploading": {"progress": 10, "message": "загрузка файла..."},
-        "processing": {"progress": 30, "message": "обработка файла..."},
-        "ocr": {"progress": 50, "message": "распознавание текста..."},
-        "parsing": {"progress": 70, "message": "анализ данных..."},
-        "completed": {"progress": 100, "message": "готово!"},
-        "error": {"progress": 0, "message": "ошибка обработки"},
+        "uploading": {"progress": 10, "message": _("загрузка файла...")},
+        "processing": {"progress": 30, "message": _("обработка файла...")},
+        "ocr": {"progress": 50, "message": _("распознавание текста...")},
+        "parsing": {"progress": 70, "message": _("анализ данных...")},
+        "completed": {"progress": 100, "message": _("готово")},
+        "error": {"progress": 0, "message": _("ошибка обработки")},
     }
 
     current_stage = stages.get(session.processing_status, {"progress": 30, "message": "обработка..."})

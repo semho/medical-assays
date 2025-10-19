@@ -1,4 +1,4 @@
-from medical_analysis import web_views
+from medical_analysis import web_views, language_views
 from django.urls import path
 
 urlpatterns = [
@@ -29,4 +29,6 @@ urlpatterns = [
     path("trends/", web_views.analysis_trends, name="analysis_trends"),
     path("trends/data/", web_views.trends_data, name="trends_data_all"),
     path("trends/data/<str:analysis_type>/", web_views.trends_data, name="trends_data"),
+    # переключение языка
+    path("set-language/", language_views.set_language, name="set_language"),
 ]

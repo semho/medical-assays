@@ -1,7 +1,8 @@
 {% extends 'medical_analysis/base.html' %}
+{% load i18n %}
 {% load static %}
 {% load l10n %}
-{% block title %}Подтверждение анализа{% endblock %}
+{% block title %}{% trans "Подтверждение анализа" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -57,9 +58,9 @@
                     <h4 class="mb-0">
                         <i class="fas fa-clipboard-check me-2"></i>
                         {% if edit_mode %}
-                            Подтвердите распознанные данные
+                            {% trans "Подтвердите распознанные данные" %}
                         {% else %}
-                            Детали анализа
+                            {% trans "Детали анализа" %}
                         {% endif %}
                     </h4>
                 </div>
@@ -69,23 +70,23 @@
                     <div class="alert alert-info mb-4">
                         <div class="row">
                             <div class="col-md-3">
-                                <strong>Дата анализа:</strong><br>
+                                <strong>{% trans "Дата анализа" %}:</strong><br>
                                 {{ medical_data.analysis_date|date:"d.m.Y" }}
                             </div>
                             <div class="col-md-3">
-                                <strong>Тип:</strong><br>
+                                <strong>{% trans "Тип" %}:</strong><br>
                                 {{ medical_data.get_analysis_type_display }}
                             </div>
                             <div class="col-md-3">
-                                <strong>Лаборатория:</strong><br>
+                                <strong>{% trans "Лаборатория" %}:</strong><br>
                                 {{ medical_data.laboratory|default:"не определена" }}
                             </div>
                             <div class="col-md-3">
-                                <strong>Статус:</strong><br>
+                                <strong>{% trans "Статус" %}:</strong><br>
                                 {% if medical_data.is_confirmed %}
-                                    <span class="badge bg-success">Подтверждено</span>
+                                    <span class="badge bg-success">{% trans "Подтверждено" %}</span>
                                 {% else %}
-                                    <span class="badge bg-warning">Требует проверки</span>
+                                    <span class="badge bg-warning">{% trans "Требует проверки" %}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -94,9 +95,8 @@
                     {% if edit_mode %}
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Проверьте данные!</strong> 
-                        Убедитесь, что все значения, единицы измерения и референсные диапазоны распознаны корректно.
-                        При необходимости внесите исправления.
+                        <strong>{% trans "Проверьте данные" %}!</strong>
+                        {% trans "Убедитесь, что все значения, единицы измерения и референсные диапазоны распознаны корректно. При необходимости внесите исправления." %}
                     </div>
                     {% endif %}
 
@@ -108,11 +108,11 @@
                             <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 30%">Параметр</th>
-                                        <th style="width: 15%">Значение</th>
-                                        <th style="width: 15%">Единицы</th>
-                                        <th style="width: 20%">Референс</th>
-                                        <th style="width: 15%">Статус</th>
+                                        <th style="width: 30%">{% trans "Параметр" %}</th>
+                                        <th style="width: 15%">{% trans "Значение" %}</th>
+                                        <th style="width: 15%">{% trans "Единицы" %}</th>
+                                        <th style="width: 20%">{% trans "Референс" %}</th>
+                                        <th style="width: 15%">{% trans "Статус" %}</th>
                                         {% if edit_mode %}
                                         <th style="width: 5%"><!-- Удалить --></th>
                                         {% endif %}
@@ -132,7 +132,7 @@
                                                    name="value_{{ param.key }}"
                                                    value="{{ param.value|unlocalize }}"
                                                    pattern="^(<|>|≤|≥)?\s*\d+([.,]\d+)?$"
-                                                   title="Введите число или значение с оператором (< 0.30, > 100 и т.д.)"
+                                                   title="{% trans 'Введите число или значение с оператором' %} (< 0.30, > 100 и т.д.)"
                                                    {% if not edit_mode %}disabled{% endif %}
                                                    required>
                                         </td>
@@ -149,16 +149,16 @@
                                                    class="form-control form-control-sm" 
                                                    name="reference_{{ param.key }}"
                                                    value="{{ param.reference }}"
-                                                   placeholder="мин - макс"
+                                                   placeholder="{% trans 'мин - макс' %}"
                                                    {% if not edit_mode %}disabled{% endif %}>
                                         </td>
                                         <td>
                                             <select class="form-select form-select-sm" 
                                                     name="status_{{ param.key }}"
                                                     {% if not edit_mode %}disabled{% endif %}>
-                                                <option value="норма" {% if param.status == 'норма' %}selected{% endif %}>Норма</option>
-                                                <option value="повышен" {% if param.status == 'повышен' %}selected{% endif %}>Повышен</option>
-                                                <option value="понижен" {% if param.status == 'понижен' %}selected{% endif %}>Понижен</option>
+                                                <option value="норма" {% if param.status == 'норма' %}selected{% endif %}>{% trans "Норма" %}</option>
+                                                <option value="повышен" {% if param.status == 'повышен' %}selected{% endif %}>{% trans "Повышен" %}</option>
+                                                <option value="понижен" {% if param.status == 'понижен' %}selected{% endif %}>{% trans "Понижен" %}</option>
                                             </select>
                                         </td>
                                         <td>
@@ -169,7 +169,7 @@
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-danger delete-param-btn"
                                                     data-param-key="{{ param.key }}"
-                                                    title="Удалить параметр">
+                                                    title="{% trans 'Удалить параметр' %}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -191,7 +191,7 @@
                         <div class="mt-4 d-flex justify-content-between">
                             <div>
                                 <a href="{% url 'analysis_results' %}" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                                    <i class="fas fa-arrow-left me-2"></i>{% trans "Назад к списку" %}
                                 </a>
                             </div>
                             <div>
@@ -199,17 +199,17 @@
                                     <button type="submit" name="action" value="delete" 
                                             class="btn btn-danger me-2"
                                             onclick="return confirm('Вы уверены, что хотите удалить этот анализ?')">
-                                        <i class="fas fa-trash me-2"></i>Удалить
+                                        <i class="fas fa-trash me-2"></i>{% trans "Удалить" %}
                                     </button>
                                     <button type="submit" name="action" value="confirm" 
                                             class="btn btn-success">
-                                        <i class="fas fa-check me-2"></i>Подтвердить и сохранить
+                                        <i class="fas fa-check me-2"></i>{% trans "Подтвердить и сохранить" %}
                                     </button>
                                 {% else %}
                                     <button type="submit" name="action" value="delete" 
                                             class="btn btn-danger"
                                             onclick="return confirm('Вы уверены, что хотите удалить этот анализ?')">
-                                        <i class="fas fa-trash me-2"></i>Удалить анализ
+                                        <i class="fas fa-trash me-2"></i>{% trans "Удалить анализ" %}
                                     </button>
                                 {% endif %}
                             </div>
@@ -221,7 +221,7 @@
                     <div class="mt-4">
                         <button class="btn btn-sm btn-outline-secondary" type="button" 
                                 data-bs-toggle="collapse" data-bs-target="#processingInfo">
-                            <i class="fas fa-info-circle me-2"></i>Информация об обработке
+                            <i class="fas fa-info-circle me-2"></i>{% trans "Информация об обработке" %}
                         </button>
                         <div class="collapse mt-2" id="processingInfo">
                             <div class="card card-body bg-light">
@@ -235,7 +235,7 @@
                     <div class="mt-4">
                         <button class="btn btn-sm btn-outline-secondary" type="button" 
                                 data-bs-toggle="collapse" data-bs-target="#rawText">
-                            <i class="fas fa-file-alt me-2"></i>Исходный текст
+                            <i class="fas fa-file-alt me-2"></i>{% trans "Исходный текст" %}
                         </button>
                         <div class="collapse mt-2" id="rawText">
                             <div class="card card-body bg-light">
@@ -301,11 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (hasErrors) {
                     e.preventDefault();
-                    alert('Проверьте введенные значения. Допустимые форматы: 123.45, < 0.30, > 100');
+                    alert('{% trans "Проверьте введенные значения. Допустимые форматы" %}: 123.45, < 0.30, > 100');
                     return false;
                 }
 
-                const confirmed = confirm('Вы уверены, что все данные проверены и корректны?');
+                const confirmed = confirm('{% trans "Вы уверены, что все данные проверены и корректны" %}?');
                 if (!confirmed) {
                     e.preventDefault();
                 }
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.querySelectorAll('.delete-param-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            if (confirm('Удалить этот параметр?')) {
+            if (confirm('{% trans "Удалить этот параметр" %}?')) {
                 this.closest('tr').remove();
             }
         });

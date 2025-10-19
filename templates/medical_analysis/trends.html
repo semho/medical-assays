@@ -1,6 +1,6 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Динамика показателей - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Динамика показателей" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -122,14 +122,14 @@
 
 {% block content %}
 <div class="d-flex justify-content-between pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="fas fa-chart-line me-2"></i>Динамика показателей</h1>
+    <h1 class="h2"><i class="fas fa-chart-line me-2"></i>{% trans "Динамика показателей" %}</h1>
 </div>
 
 <div class="row mb-4">
     <div class="col-md-4">
-        <label for="analysisTypeSelect" class="form-label">Фильтр по типу анализа:</label>
+        <label for="analysisTypeSelect" class="form-label">{% trans "Фильтр по типу анализа" %}:</label>
         <select id="analysisTypeSelect" class="form-select">
-            <option value="all">Все типы</option>
+            <option value="all">{% trans "Все типы" %}</option>
             {% for type_value, type_name in analysis_types %}
                 {% if type_value in available_types %}
                     <option value="{{ type_value }}">{{ type_name }}</option>
@@ -138,7 +138,7 @@
         </select>
     </div>
     <div class="col-md-4">
-        <label class="form-label">Графиков в ряд:</label>
+        <label class="form-label">{% trans "Графиков в ряд" %}:</label>
         <div class="grid-controls">
             <button class="grid-btn" data-cols="2">
                 <i class="fas fa-th-large"></i>2
@@ -159,7 +159,7 @@
     </div>
     <div class="col-md-4 d-flex align-items-end">
         <div id="filterInfo" class="text-muted">
-            <small>Отображаются все доступные параметры</small>
+            <small>{% trans "Отображаются все доступные параметры" %}</small>
         </div>
     </div>
 </div>
@@ -167,15 +167,15 @@
 <div id="chartsContainer">
     <div class="alert alert-info">
         <div class="spinner-border spinner-border-sm me-2" role="status">
-            <span class="visually-hidden">Загрузка...</span>
+            <span class="visually-hidden">{% trans "Загрузка" %}...</span>
         </div>
-        Загрузка данных...
+        {% trans "Загрузка данных" %}...
     </div>
 </div>
 
 <div id="loadingSpinner" class="text-center d-none">
     <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Загрузка...</span>
+        <span class="visually-hidden">{% trans "Загрузка" %}...</span>
     </div>
 </div>
 {% endblock %}
@@ -263,7 +263,7 @@ function loadTrendsData(analysisType) {
                 document.getElementById('chartsContainer').innerHTML = `
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        Нет данных для построения графиков
+                        {% trans "Нет данных для построения графиков" %}
                     </div>
                 `;
                 return;
@@ -278,7 +278,7 @@ function loadTrendsData(analysisType) {
             document.getElementById('chartsContainer').innerHTML = `
                 <div class="alert alert-danger">
                     <i class="fas fa-times-circle me-2"></i>
-                    Ошибка загрузки данных: ${error.message}
+                    {% trans "Ошибка загрузки данных" %}: ${error.message}
                 </div>
             `;
         });
@@ -299,7 +299,7 @@ function filterCharts(analysisType) {
     if (analysisType === 'all') {
         filteredData = allData;
         document.getElementById('filterInfo').innerHTML =
-            '<small>Отображаются все доступные параметры</small>';
+            '<small>{% trans "Отображаются все доступные параметры" %}</small>';
     } else {
         Object.entries(allData).forEach(([key, data]) => {
             if (data.analysis_type === analysisType) {
@@ -309,14 +309,14 @@ function filterCharts(analysisType) {
 
         const typeName = ANALYSIS_TYPE_NAMES[analysisType] || analysisType;
         document.getElementById('filterInfo').innerHTML =
-            `<small>Фильтр: <strong>${typeName}</strong></small>`;
+            `<small>{% trans "Фильтр" %}: <strong>${typeName}</strong></small>`;
     }
 
     if (Object.keys(filteredData).length === 0) {
         container.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                Нет параметров для выбранного типа анализа
+                {% trans "Нет параметров для выбранного типа анализа" %}
             </div>
         `;
         return;
@@ -352,7 +352,7 @@ function renderChartsGrouped(parametersData) {
                 <h4 class="mb-0">
                     <i class="fas fa-heartbeat me-2"></i>
                     ${ANALYSIS_TYPE_NAMES[type] || type}
-                    <span class="filter-badge">${Object.keys(grouped[type]).length} параметров</span>
+                    <span class="filter-badge">${Object.keys(grouped[type]).length} {% trans "параметров" %}</span>
                 </h4>
             </div>
         `;

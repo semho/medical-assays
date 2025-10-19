@@ -1,6 +1,6 @@
 {% extends 'medical_analysis/base.html' %}
-
-{% block title %}Регистрация - МедАнализатор{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "register" %} - {% trans "medical analyzer" %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-5">
@@ -9,7 +9,7 @@
             <div class="card-header bg-primary text-white text-center">
                 <h4 class="mb-0">
                     <i class="fas fa-user-plus me-2"></i>
-                    Регистрация
+                    {% trans "register" %}
                 </h4>
             </div>
             <div class="card-body p-4">
@@ -18,19 +18,19 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="first_name" class="form-label">Имя</label>
+                            <label for="first_name" class="form-label">{% trans "Имя" %}</label>
                             <input type="text" class="form-control" id="first_name" name="first_name">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="last_name" class="form-label">Фамилия</label>
+                            <label for="last_name" class="form-label">{% trans "Фамилия" %}</label>
                             <input type="text" class="form-control" id="last_name" name="last_name">
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="username" class="form-label">Логин <span class="text-danger">*</span></label>
+                        <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="username" name="username" required>
-                        <small class="text-muted">Будет использоваться для входа</small>
+                        <small class="text-muted">{% trans "Будет использоваться для входа" %}</small>
                     </div>
                     
                     <div class="mb-3">
@@ -39,17 +39,17 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Пароль <span class="text-danger">*</span></label>
+                        <label for="password" class="form-label">{% trans "Пароль" %} <span class="text-danger">*</span></label>
                         <input type="password" class="form-control" id="password" name="password" required minlength="8">
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password_confirm" class="form-label">Подтвердите пароль <span class="text-danger">*</span></label>
+                        <label for="password_confirm" class="form-label">{% trans "Подтвердите пароль" %} <span class="text-danger">*</span></label>
                         <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="language_preference" class="form-label">Язык</label>
+                        <label for="language_preference" class="form-label">{% trans "Язык" %}</label>
                         <select class="form-select" id="language_preference" name="language_preference">
                             <option value="ru" selected>Русский</option>
                             <option value="en">English</option>
@@ -59,7 +59,7 @@
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="fas fa-user-plus me-2"></i>
-                            Зарегистрироваться
+                            {% trans "Зарегистрироваться" %}
                         </button>
                     </div>
                 </form>
@@ -67,8 +67,8 @@
                 <hr class="my-4">
                 
                 <div class="text-center">
-                    <p class="mb-0">Уже есть аккаунт?</p>
-                    <a href="{% url 'login' %}" class="btn btn-outline-secondary mt-2">Войти</a>
+                    <p class="mb-0">{% trans "Уже есть аккаунт" %}?</p>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary mt-2">{% trans "Войти" %}</a>
                 </div>
             </div>
         </div>
