@@ -1,0 +1,35 @@
+{% extends 'medical_analysis/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Subscription Contact" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>{% trans "Service Under Development" %}
+                </h4>
+            </div>
+            <div class="card-body text-center">
+                <p class="text-muted mb-4">
+                    {% trans "The payment system is currently under development. To upgrade to Premium, please contact the administrator." %}
+                </p>
+                <div class="d-grid gap-2 col-6 mx-auto">
+                    <a href="mailto:semho@yandex.ru" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i>{% trans "Email Admin" %}
+                    </a>
+                    <a href="https://t.me/your_bot_username" class="btn btn-outline-success">
+                        <i class="fab fa-telegram me-2"></i>{% trans "Contact via Telegram Bot" %}
+                    </a>
+                </div>
+                <hr class="my-4">
+                <p class="small text-muted">
+                    {% trans "We appreciate your patience and look forward to serving you soon!" %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

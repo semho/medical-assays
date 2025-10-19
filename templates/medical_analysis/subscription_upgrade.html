@@ -1,0 +1,60 @@
+{% extends 'medical_analysis/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Upgrade Subscription" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-crown me-2"></i>{% trans "Upgrade to Premium" %}
+                </h4>
+            </div>
+            <div class="card-body text-center">
+                {% if subscription_type == 'trial' %}
+                    <p class="text-muted mb-4">
+                        {% blocktrans trimmed count counter=remaining_uploads %}
+                            You have {{ counter }} upload left in your trial.
+                        {% plural %}
+                            You have {{ counter }} uploads left in your trial.
+                        {% endblocktrans %}
+                    </p>
+                {% else %}
+                    <p class="text-success mb-4">{% trans "You have unlimited uploads with Premium" %}</p>
+                {% endif %}
+
+                <div class="d-grid gap-2 col-6 mx-auto">
+                    <a href="{% url 'subscription_contact' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-credit-card me-2"></i>{% trans "Subscribe Now - $4.99/month" %}
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                        {% trans "Назад к панели" %}
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <h6><i class="fas fa-check-circle text-success me-2"></i>{% trans "Premium Features" %}</h6>
+                        <ul class="list-unstyled small ps-0 pt-2">
+                            <li><i class="fas fa-infinity me-2 text-success"></i>{% trans "Unlimited uploads" %}</li>
+                            <li><i class="fas fa-chart-line me-2 text-success"></i>{% trans "Advanced trends" %}</li>
+                            <li><i class="fas fa-users me-2 text-success"></i>{% trans "Priority support" %}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i>{% trans "Trial Limits" %}</h6>
+                        <ul class="list-unstyled small ps-0 pt-2">
+                            <li><i class="fas fa-times me-2 text-danger"></i>{% trans "Only 5 uploads" %}</li>
+                            <li><i class="fas fa-clock me-2 text-warning"></i>{% trans "Limited features" %}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

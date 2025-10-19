@@ -1,7 +1,9 @@
 from django.core.management import BaseCommand
 from django.contrib.auth.models import User
 from pathlib import Path
-from medical_analysis.models import UserProfile, SecurityLog
+
+from medical_analysis.enums import SubcriptionType
+from medical_analysis.models import UserProfile, SecurityLog, Subscription
 
 
 class Command(BaseCommand):
@@ -52,6 +54,7 @@ class Command(BaseCommand):
         try:
             if not User.objects.filter(username=username).exists():
                 admin_user = User.objects.create_superuser(username=username, email=email, password=password)
+                Subscription.objects.create(user=admin_user, subscription_type=SubcriptionType.PAID)
 
                 # Создаем профиль
                 UserProfile.objects.get_or_create(user=admin_user, defaults={"language_preference": "ru"})

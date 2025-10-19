@@ -67,6 +67,12 @@ class FileUploadViewSet(viewsets.ViewSet):
 
     def create(self, request):
         """Загрузка нового файла для анализа"""
+        sub = request.user.subscription
+        if not sub.can_upload():
+            return Response(
+                {"error": _("Лимит загрузок исчерпан. Оформите платную подписку.")}, status=status.HTTP_403_FORBIDDEN
+            )
+
         try:
             serializer = FileUploadSerializer(data=request.data)
             if not serializer.is_valid():
@@ -80,6 +86,10 @@ class FileUploadViewSet(viewsets.ViewSet):
             # Обрабатываем загрузку
             upload_handler = FileUploadHandler()
             session = upload_handler.handle_upload(uploaded_file, request.user)
+
+            # Увеличиваем счетчик использованных загрузок
+            sub.used_uploads += 1
+            sub.save()
 
             # Логируем действие
             SecurityLog.objects.create(

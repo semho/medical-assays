@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 from cryptography.fernet import Fernet
 import base64
 
-from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType, GptModel
-from medical_analysis.utils.i18n_helpers import get_analysis_type_display
+from medical_analysis.enums import LanguageChoices, Status, AnalysisType, LaboratoryType, GptModel, SubcriptionType
+from medical_analysis.utils.i18n_helpers import get_analysis_type_display, get_subscription_type_display
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,31 @@ class UserProfile(models.Model):
         key = base64.b64decode(self.encryption_key.encode())
         return Fernet(key)
 
+class Subscription(models.Model):
+    """Подписка пользователя"""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
+    subscription_type = models.CharField(max_length=10, choices=SubcriptionType, default=SubcriptionType.TRIAL, db_index=True)
+    upload_limit = models.PositiveIntegerField(default=5)
+    used_uploads = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+
+    def can_upload(self):
+        if self.subscription_type == SubcriptionType.PAID:
+            return True
+        return self.used_uploads < self.upload_limit
+
+    def remaining_uploads(self):
+        if self.subscription_type == SubcriptionType.PAID:
+            return float('inf')
+        return self.upload_limit - self.used_uploads
+
+    def __str__(self):
+        return f"{self.user.username} - {get_subscription_type_display(self.subscription_type)}"
 
 class AnalysisSession(models.Model):
     """Сессия обработки анализа"""

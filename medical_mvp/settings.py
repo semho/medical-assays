@@ -317,3 +317,8 @@ OPENAI_MODEL = "gpt-4o-mini"
 GPT_MAX_INPUT_TOKENS = 8000  # Запас для медицинских документов
 GPT_MAX_OUTPUT_TOKENS = 2000  # Достаточно для 30+ параметров
 GPT_TEMPERATURE = 0.1  # Низкая температура для точности
+
+
+RECAPTCHA_SECRET_KEY=config("RECAPTCHA_SECRET_KEY", default="")
+RECAPTCHA_PUBLIC_KEY=config("RECAPTCHA_PUBLIC_KEY", default="")
+RECAPTCHA_USE_SSL = False
