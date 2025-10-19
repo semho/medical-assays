@@ -1,6 +1,8 @@
 .env
 .idea
 celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 __pycache__/
 medical_mvp/__pycache__
 medical_analysis/__pycache__
